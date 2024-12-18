@@ -1,0 +1,3159 @@
+000100*****************************************************************
+000200***                  (WSCNTL) CONTROL FILE
+000300***                   RECORD LENGTH = 256
+000400******************************************************************
+000500*-----------------------------------------------------------------
+000600*07/22/20 RSS  CNBD587A PHASE 1 - ADD NEW FILES ON COMPANY MAINT
+000700*                       AND SUB DIS MAINT SCREEN 3
+000800*07/22/20 RSJ  CNBD587  CNAC-40 - ADD NEW FIELDS FOR AUTOCALL
+000900*08/04/20 SXM  CNBD587  CNAC-44
+001000*                       ADD NEW RECORD TYPE '2C'.
+001100*08/11/20 TXM  CNBD587  CNAC-86
+001200*                       ADD NEW RECORD TYPE 'VC'.
+001300*11/11/20 KXY  CNC0591  ADDED EMPLOYEE CHANGE OF STATUS FLAG IN
+001400*                       COMPANY CONTROL RECORD.
+001500*11/12/20 TXM  CNC0591  ADDED ALLOW EMPLOYEE CHANGE OF STATUS
+001600*                       FLAG BY DIST/SDIST IN RECORD TYPE '2A'.
+001700*03/01/23 SXP  CNC0598  WRR PH-1: ADDED NEW FLAG IN REC TYPE '02'
+001800*04/17/23 RKW  CNC0600  WRR PH-2: ADDED 88 LEVEL IN REC TYPE '30'
+001900*04/19/23 SXG  CNLD202  INTERNAL PROCESSING - ADDED REC TYPE 'C1'
+001900*05/13/23 RPV  CNLD231  ADDED NEW FIELDS FOR WRR BEGIN DATE
+      *              CNC0600  CNTL-00-WRR-BEGINNING-DTTM AND
+      *                       CNTL-2B-WRR-BEGINNING-DTTM
+      *06/03/23 RKW  CNC0603  NEW REC TYPE '19' FOR PREP TIME.
+      *08/08/23 RJA  CNLD-270 ADDED 88 LEVEL IN REC TYPE '01'.
+      *08/08/24 RJA  CNLD-302 REMOVED CNTL-TEST-64-FLAG.
+002000******************************************************************
+002100 01  CNTL-FILE-VIA-CNTLKEY         PIC X(8) VALUE 'CNVCNC01'.
+002200 01  CNTLFILE-RLGTH                PIC S9(4) COMP VALUE +256.
+002300 01  CNTLFILE-KLGTH                PIC S9(4) COMP VALUE +20.
+002400 01  CNTLSTAT1                     PIC XX.
+002500 01  CNTL-FILE-CNTLKEY.
+002600     02  CNTLKEY.
+002700         04 FILLER                 PIC X(20).
+002800
+002900******************************************************************
+003000***            (WSCNTL) CONTROL FILE RECORD LAYOUT
+003100******************************************************************
+003200 01  WS-CNTL-FILE.
+003300     02 CNTL-AREA.
+003400        04  CNTLKEY-AREA.
+003500            06  CNTL-REC-TYPE      PIC XX  VALUE SPACE.
+003600                88 COMPANY-TYPE-REC        VALUE '00'.
+003700                88 DIST-TYPE-REC           VALUE '01'.
+003800                88 SUB-DIST-TYPE-REC       VALUE '02'.
+003900                88 SUB-DIST-TYPE-2A-REC    VALUE '2A'.
+004000                88 SUB-DIST-TYPE-2B-REC    VALUE '2B'.
+004100*CNBD587:CNAC-44-BEG
+004200                88 SUB-DIST-TYPE-2C-REC    VALUE '2C'.
+004300*CNBD587: NAC-44-END
+004400                88 POOL-TYPE-REC           VALUE '03'.
+004500                88 CREW-PROFILE-REC        VALUE '3A'.
+004600                88 CREW-PROFILE-3B-REC     VALUE '3B'.
+004700                88 POOL-ROTATION-REC       VALUE '05'.
+004800                88 ASSIGNMENT-TYPE-REC     VALUE '06'.
+004900                88 EXTRABOARD-TYPE-REC     VALUE '08'.
+005000                88 PROT-SPAREBOARD-REC     VALUE '09'.
+005100                88 ROSTER-TYPE-REC         VALUE '10'.
+005200                88 VAC-ROSTER-TYPE-REC     VALUE '11'.
+005300                88 QUAL-CODE-TYPE-REC      VALUE '12'.
+005400                88 QUAL-XREF-REC           VALUE '13'.
+005500                88 QUAL-NOTIFY-REC         VALUE '14'.
+005600                88 CALL-CONTROL-TYPE-REC   VALUE '15'.
+005700                88 TIE-UP-CONTROL-TYPE-REC VALUE '16'.
+005800                88 TIE-UP-REQUIREMENT-REC  VALUE '17'.
+005900                88 ANTICIPATED-EARNINGS    VALUE '18'.
+      *CNC0603
+                      88 PREP-TIME-REC           VALUE '19'.
+006000                88 HOLIDAY-TYPE-REC        VALUE '20'.
+006100                88 STATUS-CODE-TYPE-REC    VALUE '21'.
+006200                88 REASON-CODE-TYPE-REC    VALUE '22'.
+006300                88 ST-RSN-CODE-TYPE-REC    VALUE '23'.
+006400                88 VRU-BOARD-TYPE-REC      VALUE '29'.
+006500                88 TASK-LIST-TYPE-REC      VALUE '36'.
+006600                88 FURLOUGH-BOARD-REC      VALUE '37'.
+006700                88 CIRC-BID-CONTROL-REC    VALUE '40'.
+006800                88 CIRC-PROFILE-REC        VALUE '41'.
+006900                88 CC-746-AWARD-REC        VALUE '42'.
+007000                88 VACATION-ROSTER-REC     VALUE '43'.
+007100                88 SHIFT-REPORT-TYPE-REC   VALUE '52'.
+007200                88 VRU-MSG-REC             VALUE '53'.
+007300                88 IVR-CALL-PROFILE-REC    VALUE '54'.
+007400                88 SET-BACK-TYPE-REC       VALUE '59'.
+007500                88 MISSED-CALL-TYPE-REC    VALUE '69'.
+007600                88 AVAIL-LIST-TYPE-REC     VALUE '70'.
+007700                88 PLD-CONTROL-REC         VALUE '71'.
+007800                88 AVAIL-LIST-CNTL-REC1    VALUE '72'.
+007900                88 AVAIL-LIST-CNTL-REC2    VALUE '73'.
+008000                88 AVL-LIST-EVENT-CNTL-REC VALUE '74'.
+008100                88 SCH-POOL-PROFILE-REC    VALUE '75'.
+008200                88 SCH-POOL-PROFILE-DETAIL VALUE '76'.
+008300                88 TRAIN-DELAY-CANC-REC    VALUE '77'.
+008400                88 TOPC-CATS-STA-REC       VALUE '78'.
+008500                88 BOARD-ADJ-CNTL-REC      VALUE '79'.
+008600                88 DESTINATION-ADDRESSES   VALUE '80'.
+008700                88 ALT-CREW-PROFILE-REC    VALUE '81'.
+008800                88 RPT-TABLE-TYPE-REC      VALUE '90'.
+008900                88 USERID-AUTHORITY-REC    VALUE '91'.
+009000                88 MARKUP-TYPE-REC         VALUE '92'.
+009100                88 FRA-RPT-CNTL-REC        VALUE '93'.
+009200                88 IVR-NTFY-CNTL-REC       VALUE '94'.
+009300                88 TRANS-INITIATION-REC    VALUE '95'.
+009400                88 DATE-TIME-OFFSET-REC    VALUE '96'.
+009500                88 JCL-CNTL-REC            VALUE '97'.
+009600                88 HISTORY-FUNCTION-REC    VALUE '98'.
+009700                88 HOURS-OF-SVC-REC        VALUE 'A1'.
+009800                88 HOURS-OF-SVC2-REC       VALUE 'A2'.
+009900                88 ASSO-DIST-SDIST-REC     VALUE 'AS'.
+010000                88 TEMP-BNB-FIELD-CONTROL  VALUE 'BB'.
+010100                88 BCRAIL-PP-CLOSE-REC     VALUE 'BC'.
+010200                88 BROADCAST-CNTL          VALUE 'BR'.
+010300                88 CALLBACK-PARM-REC       VALUE 'CB'.
+010400                88 COMPANY-TABLE-REC       VALUE 'CO'.
+010500                88 24HR-STRT-PROCESS-REC   VALUE 'CS'.
+010600                88 DATA-PRIVACY-REC        VALUE 'DP'.
+010700                88 FIELD-MENU-EMPLOYEE-REC VALUE 'FE'.
+010800                88 FILE-MAINTENANCE-REC    VALUE 'FM'.
+010900                88 FRA-SHELL-SECURITY      VALUE 'FR'.
+011000                88 HOS-THRESHOLD-REC       VALUE 'HS'.
+011100                88 IVR-FUTURE-BOOKOFF-CNTL VALUE 'IB'.
+011200                88 JOB-TYPE-CNTL-REC       VALUE 'JT'.
+011300                88 MQ-MSG-PRIORITY         VALUE 'MQ'.
+011400                88 PREPONDERANCE-ROSTER-REC VALUE 'P1'.
+011500                88 PST-RESERVED            VALUE 'OK'.
+011600                88 QUAL-THRESH-REC         VALUE 'QU'.
+011700                88 RM-TYPE-REC             VALUE 'RM'.
+011800                88 TIMEOFF-RESET-REC       VALUE 'TC'.
+011900                88 TIPS-CONTROL-REC        VALUE 'TI'.
+012000                88 TIMEOFF-SECURITY        VALUE 'TO'.
+012100                88 TOPC-MAX-TIME-REC       VALUE 'TT'.
+012200                88 TIMECHECK-REC           VALUE 'T1'.
+012300                88 TVI-MOBILE-APP-OLD      VALUE 'T5'.
+012400                88 IVR-OUTAGE-CONTROL      VALUE 'VC'.
+012500                88 VRU-CONF-NUM-REC        VALUE 'VR'.
+012600                88 VW-TYPE-REC             VALUE 'VW'.
+012700                88 LOCK-REC                VALUE 'XX'.
+012800                88 EMAIL-TD-QUEUEID-REC    VALUE 'Z1'.
+012900                88 OLD-NEW-VACATION-REC    VALUE 'Z4'.
+013000                88 QUAL-CODE-OJT-REC       VALUE 'Z8'.
+013100                88 CIRC-SEQ-REC            VALUE 'Z9'.
+013200                88 ASGN-BULL-ID-SEQ-REC    VALUE 'ZA'.
+013300*CNAC33-B
+013400                88 IVR-CRAFT-PRIORTY-PROF  VALUE 'ZC'.
+013500*CNAC33-E
+013600                88 FRA-TRANSMISSION-SEQ    VALUE 'ZF'.
+013700*CNLD-202-B
+013800                88 CLNUP-PARM-REC          VALUE 'C1'.
+013900*CNLD-202-E
+013900*CNC0600-B
+014000                88 SYSTEM-RESET-BREAK      VALUE 'ZZ'.
+013900*CNC0600-E
+014100            06  FILLER    PIC X(18)        VALUE SPACE.
+014200        04  FILLER        PIC X(236)       VALUE SPACE.
+014300*
+014400******************  CNTL-AREA-00 **************************
+014500*
+014600     02  CNTL-AREA-00 REDEFINES CNTL-AREA.
+014700         04  FILLER                PIC X(20).
+014800         04  CNTL-COMPANY-NAME     PIC X(26).
+014900         04  CNTL-COMPANY-ADDR-1   PIC X(26).
+015000         04  CNTL-COMPANY-ADDR-2   PIC X(26).
+015100         04  CNTL-COMPANY-ADDR-3   PIC X(26).
+015200         04  CNTL-CNAPONL-FLAG     PIC X(01).
+015300         04  CNTL-00-UPDATE-DATE   PIC X(06).
+015400         04  CNTL-00-UPDATE-TIME   PIC X(04).
+015500         04  CNTL-00-UPDATE-USER   PIC X(08).
+015600         04  CNTL-IVR-CALL-FLAG    PIC X(01).
+015700             88  CNTL-OUTBND-IVR-CALL-ACTIVE  VALUE 'Y'.
+015800*CNBD587A-BEG
+015900         04  CNTL-AUTO-CALLING-YD  PIC X(01).
+016000         04  CNTL-AUTO-CALLING-LO  PIC X(01).
+016100*CNC0591-BEG
+016200         04  CNTL-EMP-CHG-OF-STA-FLAG  PIC X(01).
+016300             88 EMP-CHG-OF-STA-ENABLED        VALUE 'Y'.
+      *CNLD-231-CNC0600-RPV-B
+016400         04  CNTL-00-WRR-BEGINNING-DTTM.
+016400            06  CNTL-00-WRR-BEGINNING-DATE PIC X(6).
+016400            06  CNTL-00-WRR-BEGINNING-TIME PIC X(4).
+016400         04  FILLER                PIC X(099).
+016400*        04  FILLER                PIC X(109).
+      *CNLD-231-CNC0600-RPV-E
+016500*        04  FILLER                PIC X(110).
+016600*CNC0591-END
+016700*        04  FILLER                PIC X(112).
+016800*CNBD587A-END
+016900*
+017000******************  CNTL-AREA-01 **************************
+017100*
+017200     02  CNTL-AREA-01 REDEFINES CNTL-AREA.
+017300         04  FILLER                    PIC XX.
+017400         04  CNTL-DIST                 PIC XX.
+017500         04  CNTL-DIST-SEQ             PIC XX.
+017600*            ** BLANK CNTL-DIST-SEQ FOR MAIN DIST RECORDS
+017700*            ** SEQ NBRS '01' THRU '10' FOR DESCRIPTIONS
+017800         04  FILLER                    PIC X(14).
+017900         04  CNTL-DIST-NAME            PIC X(25).
+018000         04  CNTL-DIST-DESC            PIC X(80).
+018100         04  CNTL-DIVN-CODE            PIC X.
+018200             88  CNTL-WESTERN-DIVN         VALUE '0' '1' '2'
+018300                                                 '3' '4' 'B'.
+018400             88  CNTL-EASTERN-DIVN         VALUE '5' '6'.
+061931*CNC0600-CNLD-270-B
+061931* AS DISCUSSED ON 08/08/23, 0 1 3 B ARE WEST CANADA, 5 6 ARE EAST
+018400             88  CNTL-EAST-WEST-CANADA     VALUE '0' '1' '3' 'B'
+018300                                                 '5' '6'.
+061931*CNC0600-CNLD-270-E
+018500             88  CNTL-IC-DIVN              VALUE '7' '8' '9'
+018600                                                 'E' 'L'.
+018700             88  CNTL-DWP-DIVN             VALUE '1'.
+018800             88  CNTL-GT-DIVN              VALUE '4'.
+018900             88  CNTL-NORTH-QUEBEC-DIVN    VALUE '6'.
+019000             88  CNTL-IC-CCP-DIVN          VALUE '7'.
+019100             88  CNTL-WC-DIVN              VALUE '2'.
+019200             88  CNTL-ALG-DIVN             VALUE 'A'.
+019300             88  CNTL-BC-DIVN              VALUE 'B'.
+019400             88  CNTL-BANDLE-DIVN          VALUE 'E'.
+019500             88  CNTL-DMIR-DIVN            VALUE 'L'.
+019600         04  CNTL-COMPANY-CODE         PIC X.
+019700             88  CNTL-ACR-COMPANY          VALUE 'A'.
+019800             88  CNTL-BCR-COMPANY          VALUE 'B'.
+019900             88  CNTL-CN-COMPANY           VALUE 'C'.
+020000             88  CNTL-DWP-COMPANY          VALUE 'D'.
+020100             88  CNTL-GLTB-COMPANY         VALUE 'E'.
+020200             88  CNTL-GTW-COMPANY          VALUE 'G'.
+020300             88  CNTL-ICCR-COMPANY         VALUE 'I'.
+020400             88  CNTL-GLTD-COMPANY         VALUE 'L'.
+020500             88  CNTL-WC-COMPANY           VALUE 'W'.
+020600         04  CNTL-RUN-BY-PAY-RD-FLAG   PIC X.
+020700             88  RUN-BY-PAY-RD-APPLICABLE  VALUE 'Y'.
+020800         04  CNTL-RUN-BY-PAY-YD-FLAG   PIC X.
+020900             88  RUN-BY-PAY-YD-APPLICABLE  VALUE 'Y'.
+021000         04  CNTL-DISTRICT-FRA-PRINTER PIC X(8).
+021100         04  CNTL-DISP-SICK-TIME-CD    PIC X(1).
+021200             88  CNTL-SICK-TIME-HRS        VALUE 'H'.
+021300             88  CNTL-SICK-TIME-DAYS       VALUE 'D'.
+021400         04  CNTL-01-UPDATE-DATE       PIC X(06).
+021500         04  CNTL-01-UPDATE-TIME       PIC X(04).
+021600         04  CNTL-01-UPDATE-USERID     PIC X(08).
+021700         04  CNTL-DISTRICT-IVR-SERVER  PIC X(1).
+021800             88  CNTL-IVR-SERVER-MONTREAL  VALUE 'M'.
+021900             88  CNTL-IVR-SERVER-TORONTO   VALUE 'T'.
+022000         04  FILLER                    PIC X(099).
+022100*
+022200******************  CNTL-AREA-02 **************************
+022300*
+022400     02  CNTL-AREA-02 REDEFINES CNTL-AREA.
+022500         04  FILLER                       PIC X(004).
+022600         04  CNTL-SUB-DIST                PIC X(002).
+022700         04  FILLER                       PIC X(014).
+022800         04  CNTL-SUB-DIST-NAME           PIC X(025).
+022900         04  CNTL-ASSIGNED-YDM-DATA.
+023000             06  CNTL-AYDM-CYCLE          PIC X(001).
+023100             06  CNTL-AYDM-CYCLE-TIME     PIC X(004).
+023200             06  CNTL-AYDM-ASGN-OVRIDE-FLAG PIC X(001).
+023300                 88 CNTL-AYDM-ASGN-OVRIDE           VALUE 'Y'.
+023400                 88 CNTL-AYDM-ASGN-OVRIDE-TIME      VALUE 'T'.
+023500*            06  CNTL-AYDM-ASGN-OVRIDE-TIME PIC X(004).
+023600             06  FILLER                     PIC X(003).
+023700             06  CNTL-AYDM-OT-IS-REG-FLAG   PIC X(001).
+023800                 88 CNTL-AYDM-OT-IS-REG             VALUE 'Y'.
+023900             06  CNTL-AYDM-COMBINE-CRAFT-FLAG PIC X(001).
+024000                 88 CNTL-AYDM-COMBINE-CRAFT-NO      VALUE 'N' ' '.
+024100                 88 CNTL-AYDM-COMBINE-CRAFT-UTU     VALUE 'U'.
+024200                 88 CNTL-AYDM-COMBINE-CRAFT         VALUE 'Y'.
+024300             06  CNTL-AYDM-RESET-SEN-FLAG PIC X(001).
+024400                 88 CNTL-AYDM-RESET-SEN             VALUE 'Y'.
+024500             06  CNTL-AYDM-OT-CYCLE       PIC X(001).
+024600             06  CNTL-AYDM-OT-START-DAY   PIC X(002).
+024700             06  CNTL-AYDM-OT-START-TIME  PIC X(004).
+024800             06  FILLER                   PIC X(005).
+024900*            06  CNTL-AYDM-XB-ASGN-OVRIDE-FLAG PIC X(001).
+025000*                88 CNTL-AYDM-XB-ASGN-OVRIDE        VALUE 'Y'.
+025100*            06  CNTL-AYDM-XB-ASGN-OVRIDE-TIME PIC X(004).
+025200             06  FILLER                        PIC X(007).
+025300****  FOLLOWING FLAG DENOTES WHETHER 5 UNASSIGNED YARDMASTER
+025400****  STARTS PRECLUDES AN EMPLOYEE FROM WORKING OTHER
+025500****  ASSIGNMENTS.
+025600         04  CNTL-OTHER-WORK              PIC X(001).
+025700             88  CNTL-OTHER-WORK-PRECLUDED         VALUE 'N'.
+025800             88  CNTL-OTHER-WORK-OK                VALUE 'Y'.
+025900         04  CNTL-TIME-ZONE               PIC X(001).
+026000             88  CNTL-02-VALID-TIME-ZONE           VALUE
+026100                                      'A', 'E', 'C', 'M', 'P'.
+026200         04  CNTL-PAY-VAC-AND-WORK        PIC X(001).
+026300             88  PAY-VAC-AND-WORK                   VALUE 'Y'.
+026400****  FOLLOWING FLAG IS USED TO DETERMINE WHETHER A REGULAR
+026500****  ASSIGNED EMPLOYEE WITH 5 STARTS SHOULD BE AVAILABLE
+026600****  FOR ADDITIONAL WORK.  'N' - DONT LOOK AT STARTS
+026700         04  CNTL-VERIFY-STARTS           PIC X(001).
+026800             88  CNTL-VERIFY-STARTS-NO        VALUE 'N' SPACE.
+026900             88  CNTL-VERIFY-STARTS-YES       VALUE 'Y'.
+027000         04  FILLER                       PIC X(002).
+027100         04  CNTL-APPLY-LIMBO             PIC X(001).
+027200             88  CNTL-APPLY-LIMBO-NO          VALUE 'N' SPACE.
+027300             88  CNTL-APPLY-LIMBO-YES         VALUE 'Y'.
+027400         04  CNTL-DEFAULT-PR-CLASS        PIC X(008).
+027500         04  CNTL-RUN-NUMBER-ROAD         PIC X(004).
+027600         04  CNTL-UCA-COST-CTR            PIC X(003).
+027700         04  CNTL-RESTRICTED-LAYOFF-CODE.
+027800             08  CNTL-R-LAYOFF-CODE
+027900                 OCCURS 5 TIMES           PIC X(001).
+028000         04  CNTL-DAILY-MARKUP            PIC X(001).
+028100             88  DAILY-MARKUP-ALLOWED                VALUE 'Y'.
+028200         04  AVAILABILITY-LIST-FLAG       PIC X(001).
+028300             88  AVAILABILITY-BY-DAY                 VALUE 'D'.
+028400             88  AVAILABILITY-BY-SHIFT-DAY           VALUE 'S'.
+028500         04  CNTL-VAC-OPEN-JOB-CODE       PIC X(001).
+028600             88  CNTL-VAC-OPEN-JOB                   VALUE 'Y'.
+028700         04  CNTL-LEAD-CALL-TIME          PIC 9(004).
+028800*BD598-B
+028900*        04  FILLER                       PIC X(002).
+029000         04  FILLER                       PIC X(001).
+029100         04  CNTL-CAN-WRR-FLAG            PIC X(001).
+029200             88  CNTL-CAN-WRR-NEW                    VALUE 'N'.
+029300*BD598-E
+029400         04  CNTL-US-DOM                  PIC X(001).
+029500             88  CNTL-US-DOMICILED                   VALUE 'Y'.
+029600         04  FILLER                       PIC X(006).
+029700         04  CNTL-TRN-RIGHTS-CODE         PIC X(001).
+029800             88  CNTL-TRN-RIGHTS-ROAD-YARD           VALUE '1'.
+029900             88  CNTL-TRN-RIGHT-YARD-ONLY            VALUE '2'.
+030000         04  FILLER                       PIC X(008).
+030100         04  CNTL-EN-DIST-PROF            PIC X(008).
+030200         04  CNTL-TR-DIST-PROF            PIC X(008).
+030300         04  CNTL-EN-RATE-CODE            PIC X(001).
+030400         04  CNTL-TR-RATE-CODE            PIC X(001).
+030500         04  CNTL-BLE-DATA.
+030600             06  CNTL-BLE-CYCLE           PIC X(001).
+030700             06  CNTL-BLE-CYCLE-TIME      PIC X(004).
+030800             06  CNTL-BLE-ASGN-OVRIDE-FLAG PIC X(001).
+030900                 88 CNTL-BLE-ASGN-OVRIDE       VALUE 'Y'.
+031000                 88 CNTL-BLE-ASGN-OVRIDE-TIME  VALUE 'T'.
+031100*            06  CNTL-BLE-ASGN-OVRIDE-TIME PIC X(004).
+031200             06  FILLER                    PIC X(003).
+031300             06  CNTL-BLE-OT-IS-REG-FLAG   PIC X(001).
+031400                 88 CNTL-BLE-OT-IS-REG         VALUE 'Y'.
+031500             06  CNTL-BLE-COMBINE-CRAFT-FLAG PIC X(001).
+031600                 88 CNTL-BLE-COMBINE-CRAFT-NO  VALUE 'N' ' '.
+031700                 88 CNTL-BLE-COMBINE-CRAFT     VALUE 'Y'.
+031800             06  CNTL-BLE-RESET-SEN-FLAG  PIC X(001).
+031900                 88 CNTL-BLE-RESET-SEN         VALUE 'Y'.
+032000             06  CNTL-BLE-OT-CYCLE        PIC X(001).
+032100             06  CNTL-BLE-OT-START-DAY    PIC X(002).
+032200             06  CNTL-BLE-OT-START-TIME   PIC X(004).
+032300             06  FILLER                   PIC X(005).
+032400*            06  CNTL-BLE-XB-ASGN-OVRIDE-FLAG PIC X(001).
+032500*                88 CNTL-BLE-XB-ASGN-OVRIDE         VALUE 'Y'.
+032600*            06  CNTL-BLE-XB-ASGN-OVRIDE-TIME PIC X(004).
+032700             06  FILLER                       PIC X(007).
+032800         04  CNTL-UTU-DATA.
+032900             06  CNTL-UTU-CYCLE           PIC X(001).
+033000             06  CNTL-UTU-CYCLE-TIME      PIC X(004).
+033100             06  CNTL-UTU-ASGN-OVRIDE-FLAG PIC X(001).
+033200                 88 CNTL-UTU-ASGN-OVRIDE      VALUE 'Y'.
+033300                 88 CNTL-UTU-ASGN-OVRIDE-TIME VALUE 'T'.
+033400*            06  CNTL-UTU-ASGN-OVRIDE-TIME PIC X(004).
+033500             06  FILLER                    PIC X(003).
+033600             06  CNTL-UTU-OT-IS-REG-FLAG   PIC X(001).
+033700                 88 CNTL-UTU-OT-IS-REG         VALUE 'Y'.
+033800             06  CNTL-UTU-COMBINE-CRAFT-FLAG PIC X(001).
+033900                 88 CNTL-UTU-COMBINE-CRAFT-NO  VALUE 'N' ' '.
+034000                 88 CNTL-UTU-COMBINE-CRAFT-UTU VALUE 'U'.
+034100                 88 CNTL-UTU-COMBINE-CRAFT     VALUE 'Y'.
+034200             06  CNTL-UTU-RESET-SEN-FLAG PIC X(001).
+034300                 88 CNTL-UTU-RESET-SEN         VALUE 'Y'.
+034400             06  CNTL-UTU-OT-CYCLE        PIC X(001).
+034500             06  CNTL-UTU-OT-START-DAY    PIC X(002).
+034600             06  CNTL-UTU-OT-START-TIME   PIC X(004).
+034700             06  FILLER                   PIC X(005).
+034800*            06  CNTL-UTU-XB-ASGN-OVRIDE-FLAG PIC X(001).
+034900*                88 CNTL-UTU-XB-ASGN-OVRIDE         VALUE 'Y'.
+035000*            06  CNTL-UTU-XB-ASGN-OVRIDE-TIME PIC X(004).
+035100             06  FILLER                       PIC X(007).
+035200*****UNASSIGNED YARDMASTER
+035300         04  CNTL-YDM-DATA.
+035400             06  CNTL-YDM-CYCLE           PIC X(001).
+035500             06  CNTL-YDM-CYCLE-TIME      PIC X(004).
+035600             06  CNTL-YDM-ASGN-OVRIDE-FLAG PIC X(001).
+035700                 88 CNTL-YDM-ASGN-OVRIDE      VALUE 'Y'.
+035800                 88 CNTL-YDM-ASGN-OVRIDE-TIME VALUE 'T'.
+035900*            06  CNTL-YDM-ASGN-OVRIDE-TIME PIC X(004).
+036000             06  FILLER                    PIC X(003).
+036100             06  CNTL-YDM-OT-IS-REG-FLAG   PIC X(001).
+036200                 88 CNTL-YDM-OT-IS-REG         VALUE 'Y'.
+036300             06  CNTL-YDM-COMBINE-CRAFT-FLAG PIC X(001).
+036400                 88 CNTL-YDM-COMBINE-CRAFT-NO  VALUE 'N' ' '.
+036500                 88 CNTL-YDM-COMBINE-CRAFT-UTU VALUE 'U'.
+036600                 88 CNTL-YDM-COMBINE-CRAFT    VALUE 'Y'.
+036700             06  CNTL-YDM-RESET-SEN-FLAG PIC X(001).
+036800                 88 CNTL-YDM-RESET-SEN        VALUE 'Y'.
+036900             06  CNTL-YDM-OT-CYCLE        PIC X(001).
+037000             06  CNTL-YDM-OT-START-DAY    PIC X(002).
+037100             06  CNTL-YDM-OT-START-TIME   PIC X(004).
+      *CNLD-231-CNC0600-RPV-B
+016400             06  CNTL-02-WRR-BEGINNING-DTTM PIC X(10).
+016400             06  FILLER                   PIC X(002).
+037200*            06  FILLER                   PIC X(005).
+      *CNLD-231-CNC0600-RPV-E
+037300*            06  CNTL-YDM-XB-ASGN-OVRIDE-FLAG PIC X(001).
+037400*                88 CNTL-YDM-XB-ASGN-OVRIDE         VALUE 'Y'.
+037500*            06  CNTL-YDM-XB-ASGN-OVRIDE-TIME PIC X(004).
+      *CNLD-231-CNC0600-RPV-B
+037600*            06  FILLER                       PIC X(007).
+      *CNLD-231-CNC0600-RPV-E
+037700         04  CNTL-FRA-FLAG                PIC X(001).
+037800             88  CNTL-FRA-ALLOWED             VALUE 'Y', 'O'.
+037900             88  CNTL-FRA-ALLOWED-OLD         VALUE 'Y'.
+038000             88  CNTL-FRA-ALLOWED-NEW         VALUE 'O'.
+038100             88  CNTL-FRA-NOT-ALLOWED         VALUES 'N' ' '.
+038200         04  CNTL-RUN-NUMBER-YARD         PIC X(004).
+038300         04  CNTL-RUN-NUMBER-SA           PIC X(004).
+038400*CNLD-302 B
+038400*        04  CNTL-TEST-64-FLAG            PIC X(001).
+038500*            88  CNTL-TEST-64-ON-ARR                 VALUE 'Y'.
+038400         04  FILLER                       PIC X(001).
+038400*CNLD-302 E
+038600         04  CNTL-FRA-RESPITE-FLAG        PIC X(001).
+038700         04  CNTL-CANADA-TIEUP-FLAG       PIC X(001).
+038800             88 CNTL-CANADA-TIEUP-NO                 VALUE 'N'.
+038900             88 CNTL-CANADA-TIEUP-YES                VALUE 'Y'.
+039000         04  CNTL-TRAIN-LINEUP-FLAG       PIC X(001).
+039100             88  CNTL-IGNORE-TRAIN-LU                VALUE 'Y'.
+039200         04  CNTL-CATS-TRANS-FLAGS.
+039300             06  CNTL-CATS-TK-RD-FLAG     PIC X(001).
+039400                 88  CNTL-CATS-TK-RD                 VALUE 'Y'.
+039500             06  CNTL-CATS-TK-YD-FLAG     PIC X(001).
+039600                 88  CNTL-CATS-TK-YD                 VALUE 'Y'.
+039700             06  CNTL-CATS-TK-NW-FLAG     PIC X(001).
+039800                 88  CNTL-CATS-TK-NW                 VALUE 'Y'.
+039900         04  CNTL-CATS-ACTIVE-FLAG        PIC X(001).
+040000             88  CNTL-CATS-ACTIVE                    VALUE 'Y'.
+040100*
+040200******************  CNTL-AREA-2A **************************
+040300*
+040400     02  CNTL-AREA-2A REDEFINES CNTL-AREA.
+040500         04  FILLER                       PIC X(004).
+040600         04  CNTL-2A-SUB-DIST             PIC X(002).
+040700         04  FILLER                       PIC X(014).
+040800         04  CNTL-UTU-SPLIT-FLAG          PIC X(001).
+040900             88  CNTL-UTU-SPLIT                      VALUE 'S'.
+041000             88  CNTL-UTU-COMBINED                   VALUE 'C'.
+041100         04  CNTL-746-RENEW               PIC X(002).
+041200         04  CNTL-746-RENEW-DAYS
+041300             REDEFINES CNTL-746-RENEW     PIC 9(002).
+041400         04  CNTL-PLD-TR-WTHDRW-CANCEL-FL PIC X(001).
+041500             88  CNTL-PLD-TR-WTHDRW-ALLOWED       VALUE 'W' 'B'.
+041600             88  CNTL-PLD-TR-CANCEL-ALLOWED       VALUE 'C' 'B'.
+041700             88  CNTL-PLD-TR-BOTH-ALLOWED         VALUE 'B'.
+041800             88  CNTL-PLD-TR-NEITHER-ALLOWED      VALUE 'N' ' '.
+041900         04  CNTL-PLD-YA-WTHDRW-CANCEL-FL PIC X(001).
+042000             88  CNTL-PLD-YA-WTHDRW-ALLOWED       VALUE 'W' 'B'.
+042100             88  CNTL-PLD-YA-CANCEL-ALLOWED       VALUE 'C' 'B'.
+042200             88  CNTL-PLD-YA-BOTH-ALLOWED         VALUE 'B'.
+042300             88  CNTL-PLD-YA-NEITHER-ALLOWED      VALUE 'N' ' '.
+042400         04  CNTL-PLD-EN-WTHDRW-BEFORE    PIC X(003).
+042500         04  CNTL-PLD-TR-WTHDRW-BEFORE    PIC X(003).
+042600         04  CNTL-PLD-YA-WTHDRW-BEFORE    PIC X(003).
+042700*CNC0588B
+042800*        04  FILLER                       PIC X(53).
+042900         04  CNTL-MEAL-ALLOWANCES-2.
+043000             06  CNTL-MEAL-ALLOWANCES-ARRAY-2 OCCURS 5 TIMES.
+043100                 08  CNTL-MA-TM-T-AWAY    PIC X(004).
+043200         04  FILLER                       PIC X(33).
+043300*CNC0588E
+043400         04  CNTL-VAC-ALLOCATION-TABLE    PIC X(001).
+043500             88  CNTL-VAC-ALLO-DAILY                 VALUE 'D'.
+043600             88  CNTL-VAC-ALLO-WEEKLY                VALUE 'W'.
+043700         04  CNTL-ROAD-BLE-ADD            PIC X.
+043800         04  CNTL-ROAD-BLE-DEL            PIC X.
+043900         04  CNTL-YARD-BLE-ADD            PIC X.
+044000         04  CNTL-YARD-BLE-DEL            PIC X.
+044100         04  CNTL-ROAD-UTU-ADD            PIC X.
+044200         04  CNTL-ROAD-UTU-DEL            PIC X.
+044300         04  CNTL-YARD-UTU-ADD            PIC X.
+044400         04  CNTL-YARD-UTU-DEL            PIC X.
+044500         04  CNTL-BLE-AUTO-EXEC-ARRAY OCCURS 10 TIMES.
+044600             06  CNTL-BLE-AE-STATUS       PIC X(001).
+044700         04  CNTL-UTU-AUTO-EXEC-ARRAY OCCURS 10 TIMES.
+044800             06  CNTL-UTU-AE-STATUS       PIC X(001).
+044900         04  CNTL-PAY-PERIOD              PIC X(002).
+045000             88  CNTL-WEEKLY-PAY            VALUE '07'.
+045100             88  CNTL-BI-WEEKLY-PAY         VALUE '14' ' '.
+045200         04  CNTL-R-BLE-HTR               PIC X(002).
+045300             88  CNTL-OK-R-BLE-HTR     VALUES '00' THRU '30'.
+045400         04  CNTL-Y-BLE-HTR               PIC X(002).
+045500             88  CNTL-OK-Y-BLE-HTR     VALUES '00' THRU '30'.
+045600         04  CNTL-R-UTU-HTR               PIC X(002).
+045700             88  CNTL-OK-R-UTU-HTR     VALUES '00' THRU '30'.
+045800         04  CNTL-Y-UTU-HTR               PIC X(002).
+045900             88  CNTL-OK-Y-UTU-HTR     VALUES '00' THRU '30'.
+046000         04  CNTL-YDMSTR-HTR              PIC X(002).
+046100             88  CNTL-OK-YDMSTR-HTR    VALUES '00' THRU '30'.
+046200         04  CNTL-CLERICAL-HTR            PIC X(002).
+046300             88  CNTL-OK-CLERICAL-HTR  VALUES '00' THRU '30'.
+046400         04  CNTL-GEN-TRAINER-CLAIMS-FLAG PIC X(001).
+046500             88  CNTL-GEN-TRAINER      VALUES 'Y' SPACE.
+046600             88  CNTL-NO-TRAINER       VALUE 'N'.
+046700         04  CNTL-MEAL-ALLOWANCES.
+046800             06  CNTL-MEAL-ALLOWANCES-ARRAY OCCURS 5 TIMES.
+046900                 08  CNTL-MA-TIME-AWAY    PIC X(004).
+047000                 08  CNTL-MA-MISC-CLAIM   PIC X(002).
+047100         04  CNTL-YDM-PAID-SICK-FLAG      PIC X(001).
+047200             88  CNTL-YDM-PAID-SICK    VALUES 'Y'.
+047300             88  CNTL-YDM-NOT-PAID-SICK VALUE 'N' SPACE.
+047400         04  CNTL-MIN-DUTY                PIC X(001).
+047500         04  CNTL-RESTRICT-TIE-FLAG       PIC X(001).
+047600             88  CNTL-DONT-RESTRICT-TIE     VALUES ' ', 'N'.
+047700             88  CNTL-RESTRICT-TIE-YARD     VALUES 'Y' 'B'.
+047800             88  CNTL-RESTRICT-TIE-ROAD     VALUES 'R' 'B'.
+047900         04  CNTL-ALT-REST-PLACEMENT      PIC X(001).
+048000             88  CNTL-ALT-REST-PLACE          VALUE 'Y'.
+048100             88  CNTL-NO-ALT-REST-PLACE       VALUE 'N' ' '.
+048200         04  CNTL-TIEUP-LIMIT-ROAD-EDIT.
+048300             06 CNTL-TIEUP-LIMIT-ROAD-EDIT-HH PIC X(02).
+048400             06 CNTL-TIEUP-LIMIT-ROAD-EDIT-MM PIC X(02).
+048500         04  CNTL-ALLOW-746TV-MOD-FLAG    PIC X(001).
+048600             88  CNTL-ALLOW-746TV-MOD         VALUE 'Y'.
+048700         04  CNTL-DEL-746PV-CURR-ASGN-FLAG  PIC X(001).
+048800             88  CNTL-DEL-746PV-CURR-ASGN     VALUE 'Y'.
+048900         04  CNTL-SPLIT-SHIFT-HOS-FLAG    PIC X(001).
+049000             88  CNTL-SPLIT-SHIFT-HOS         VALUE 'Y'.
+049100         04  CNTL-ALLOW-VAC-EXTNSN-FLAG   PIC X(001).
+049200             88  CNTL-ALLOW-VAC-EXTNSN        VALUE 'Y'.
+049300         04  CNTL-TO-BLE                  PIC X(02).
+049400             88  CNTL-TO-BLE-01               VALUE '01'.
+049500             88  CNTL-TO-BLE-02               VALUE '02'.
+049600         04  CNTL-TO-BLE-MILE1            PIC X(04).
+049700         04  CNTL-TO-BLE-MILE1-N          REDEFINES
+049800             CNTL-TO-BLE-MILE1            PIC 9(04).
+049900         04  CNTL-TO-BLE-MILE2            PIC X(04).
+050000         04  CNTL-TO-BLE-MILE2-N          REDEFINES
+050100             CNTL-TO-BLE-MILE2            PIC 9(04).
+050200         04  CNTL-TO-BLE-MILE3            PIC X(04).
+050300         04  CNTL-TO-BLE-MILE3-N          REDEFINES
+050400             CNTL-TO-BLE-MILE3            PIC 9(04).
+050500         04  CNTL-TO-UTU                  PIC X(02).
+050600             88  CNTL-TO-UTU-01               VALUE '01'.
+050700             88  CNTL-TO-UTU-02               VALUE '02'.
+050800         04  CNTL-TO-UTU-MILE1            PIC X(04).
+050900         04  CNTL-TO-UTU-MILE1-N          REDEFINES
+051000             CNTL-TO-UTU-MILE1            PIC 9(04).
+051100         04  CNTL-TO-UTU-MILE2            PIC X(04).
+051200         04  CNTL-TO-UTU-MILE2-N          REDEFINES
+051300             CNTL-TO-UTU-MILE2            PIC 9(04).
+051400         04  CNTL-TO-UTU-MILE3            PIC X(04).
+051500         04  CNTL-TO-UTU-MILE3-N          REDEFINES
+051600             CNTL-TO-UTU-MILE3            PIC 9(04).
+051700         04  CNTL-MPH-FACTOR              PIC X(05).
+051800         04  CNTL-PLD-EN-WTHDRW-CANCEL-FL PIC X(01).
+051900             88  CNTL-PLD-EN-WTHDRW-ALLOWED       VALUE 'W' 'B'.
+052000             88  CNTL-PLD-EN-CANCEL-ALLOWED       VALUE 'C' 'B'.
+052100             88  CNTL-PLD-EN-BOTH-ALLOWED         VALUE 'B'.
+052200             88  CNTL-PLD-EN-NEITHER-ALLOWED      VALUE 'N' ' '.
+052300         04  CNTL-PLD-START-TIME-FL       PIC X(01).
+052400             88  CNTL-PLD-START-TM-UNRESTRICTED   VALUE 'Y'.
+052500             88  CNTL-PLD-START-TM-RESTRICTED     VALUE 'N' ' '.
+052600         04  CNTL-SDV-START-TIME-FL       PIC X(01).
+052700             88  CNTL-SDV-START-TM-UNRESTRICTED   VALUE 'Y'.
+052800             88  CNTL-SDV-START-TM-RESTRICTED     VALUE 'N' ' '.
+052900         04  CNTL-FRA-TIEUP-LIMIT         PIC X(02).
+053000         04  CNTL-APPLY-MIN-DUTY-FL       PIC X(01).
+053100             88  CNTL-DONT-APPLY-MIN-DUTY         VALUES 'N'.
+053200             88  CNTL-APPLY-MIN-DUTY-YARD         VALUES 'Y' 'B'.
+053300             88  CNTL-APPLY-MIN-DUTY-ROAD         VALUES 'R' 'B'.
+053400         04  CNTL-TIEUP-LIMIT-ROAD-CERT.
+053500             06 CNTL-TIEUP-LIMIT-ROAD-CERT-HH PIC X(02).
+053600             06 CNTL-TIEUP-LIMIT-ROAD-CERT-MM PIC X(02).
+053700         04  CNTL-TIEUP-LIMIT-YARD-EDIT.
+053800             06 CNTL-TIEUP-LIMIT-YARD-EDIT-HH PIC X(02).
+053900             06 CNTL-TIEUP-LIMIT-YARD-EDIT-MM PIC X(02).
+054000         04  CNTL-TIEUP-LIMIT-YARD-CERT.
+054100             06 CNTL-TIEUP-LIMIT-YARD-CERT-HH PIC X(02).
+054200             06 CNTL-TIEUP-LIMIT-YARD-CERT-MM PIC X(02).
+054300         04  CNTL-YDM-HOS-FLAG            PIC X(001).
+054400             88  CNTL-YDM-HOS-EXEMPT              VALUE 'Y'.
+054500             88  CNTL-YDM-HOS-NOT-EXEMPT          VALUE 'N' SPACE.
+054600         04  CNTL-CLM-VALID-FL            PIC X(001).
+054700             88  CNTL-CLM-VALID-YES               VALUE 'Y'.
+054800             88  CNTL-CLM-VALID-NO                VALUE 'N' SPACE.
+054900         04  CNTL-2A-LASTUPDATE-DATE      PIC X(006).
+055000         04  CNTL-2A-LASTUPDATE-TIME      PIC X(004).
+055100         04  CNTL-2A-LASTUPDATE-USER      PIC X(008).
+055200         04  CNTL-2A-RLSE-OFF-DUTY-MAX    PIC X(002).
+055300***      04  FILLER                       PIC X(010).
+055400         04  CNTL-TO-BLE-INT-REQ-FL       PIC X(001).
+055500             88  CNTL-TO-BLE-INT-REQ-YES          VALUE 'Y' SPACE.
+055600             88  CNTL-TO-BLE-INT-REQ-NO           VALUE 'N'.
+055700         04  CNTL-TO-UTU-INT-REQ-FL       PIC X(001).
+055800             88  CNTL-TO-UTU-INT-REQ-YES          VALUE 'Y' SPACE.
+055900             88  CNTL-TO-UTU-INT-REQ-NO           VALUE 'N'.
+056000*CNC0591-BEG
+056100         04  CNTL-AEMP-CHG-STAT-FL        PIC X(01).
+056200             88  CNTL-AEMP-CHG-STAT-YES           VALUE 'Y'.
+056300             88  CNTL-AEMP-CHG-STAT-NO            VALUE 'N' ' '.
+056400         04  FILLER                       PIC X(007).
+056500*CNC0591-END
+056600*
+056700******************  CNTL-AREA-2B **************************
+056800*
+056900     02  CNTL-AREA-2B REDEFINES CNTL-AREA.
+057000         04  FILLER                       PIC X(004).
+057100         04  CNTL-2B-SUB-DIST             PIC X(002).
+057200         04  FILLER                       PIC X(014).
+057300         04  CNTL-2B-BLOCK-AMOUNT.
+057400             06  CNTL-2B-BLOCK-AMOUNT-ARRAY OCCURS 9 TIMES.
+057500                 08  CNTL-2B-BLOCK        PIC X(002).
+057600                 08  CNTL-2B-AMOUNT       PIC X(008).
+057700                 08  CNTL-2B-AMOUNT-NUM REDEFINES
+057800                     CNTL-2B-AMOUNT       PIC 9(6)V9(2).
+057900         04  CNTL-2B-CAN-ADJ              PIC X(001).
+058000             88  CNTL-2B-CAN-ADJ-ALLOWED      VALUE 'Y'.
+058100         04  CNTL-2B-AUTO-APP-WK-FLAG     PIC X(001).
+058200             88  CNTL-2B-AUTO-APP-WK          VALUE 'Y'.
+058300         04  CNTL-2B-AUTO-APP-NONWK-FLAG  PIC X(001).
+058400             88  CNTL-2B-AUTO-APP-NONWK       VALUE 'Y'.
+058500         04  CNTL-2B-BCR-OT-THRESHOLD     PIC X(003).
+058600         04  CNTL-2B-IVR-CALL-FL          PIC X(001).
+058700         04  CNTL-2B-IVR-CALL-PROF        PIC X(008).
+058800         04  CNTL-2B-IVR-NOTIFY-FL        PIC X(001).
+058900         04  CNTL-2B-AFHT-LODGE-PROC-FL   PIC X(001).
+059000         04  CNTL-2B-PV-PLACE-EN-FL       PIC X(001).
+059100             88  CNTL-2B-PV-PLACE-EN-IMMED    VALUE 'Y'.
+059200         04  CNTL-2B-PV-PLACE-TR-FL       PIC X(001).
+059300             88  CNTL-2B-PV-PLACE-TR-IMMED    VALUE 'Y'.
+059400         04  CNTL-2B-TV-PLACE-EN-FL       PIC X(001).
+059500             88  CNTL-2B-TV-PLACE-EN-IMMED    VALUE 'Y'.
+059600         04  CNTL-2B-TV-PLACE-TR-FL       PIC X(001).
+059700             88  CNTL-2B-TV-PLACE-TR-IMMED    VALUE 'Y'.
+059800         04  CNTL-2B-SH-LEAD-HM-FL        PIC X(001).
+059900             88  CNTL-2B-SH-LEAD-HM-OK        VALUE 'Y'.
+060000             88  CNTL-2B-SH-LEAD-HM-NO        VALUE 'N', ' '.
+060100         04  CNTL-2B-SH-LEAD-AW-FL        PIC X(001).
+060200             88  CNTL-2B-SH-LEAD-AW-OK        VALUE 'Y'.
+060300             88  CNTL-2B-SH-LEAD-AW-NO        VALUE 'N', ' '.
+060400         04  CNTL-2B-SH-CALL-HM-FL        PIC X(001).
+060500             88  CNTL-2B-SH-CALL-HM-OK        VALUE 'Y'.
+060600             88  CNTL-2B-SH-CALL-HM-NO        VALUE 'N', ' '.
+060700         04  CNTL-2B-SH-CALL-AW-FL        PIC X(001).
+060800             88  CNTL-2B-SH-CALL-AW-OK        VALUE 'Y'.
+060900             88  CNTL-2B-SH-CALL-AW-NO        VALUE 'N', ' '.
+061000         04  CNTL-2B-DLVR-MSG-UDR-FL      PIC X(001).
+061100             88  CNTL-2B-DLVR-MSG-UDR-YES     VALUE 'Y'.
+061200             88  CNTL-2B-DLVR-MSG-UDR-NO      VALUE 'N', ' '.
+061300         04  CNTL-2B-SH-CALL-HHMM         PIC X(004).
+061400         04  CNTL-2B-MIN-CBCK-HHMM        PIC X(004).
+061500         04  CNTL-2B-DLVR-MSG-MTOD-FL     PIC X(001).
+061600             88  CNTL-2B-DLVR-MSG-MTOD-YES    VALUE 'Y'.
+061700             88  CNTL-2B-DLVR-MSG-MTOD-NO     VALUE 'N', ' '.
+061800         04  CNTL-2B-VCNY-PROFILE         PIC X(008).
+061900         04  CNTL-2B-REFRESH-VCNY-INQ     PIC X(004).
+062000         04  CNTL-2B-LAST-REFRESH-TS      PIC X(026).
+062100         04  CNTL-2B-DROP-TURN-FL         PIC X(001).
+062200*CNC0582 - BEG
+062300***      04  FILLER                       PIC X(054).
+062400         04  CNTL-2B-PLD-EN-REQ-DAYS      PIC X(003).
+062500         04  CNTL-2B-PLD-TR-REQ-DAYS      PIC X(003).
+062600         04  CNTL-2B-PLD-YA-REQ-DAYS      PIC X(003).
+062700*CNBD587A-BEG
+062800         04  CNTL-2B-AUTO-SCAL-FL         PIC X(1).
+062900             88  CNTL-2B-AUTO-SCAL-OFF        VALUES 'N' ' '.
+063000             88  CNTL-2B-AUTO-SCAL-ON         VALUE  'Y'.
+063100         04  CNTL-2B-AUTO-SCAL-PLAN2ORD   PIC X(4).
+063200         04  CNTL-2B-AUTO-VACANCY-TIME    PIC X(4).
+063300         04  CNTL-2B-AUTO-CALL-TIME       PIC X(4).
+063400         04  CNTL-2B-SHIFT-VCNY-DISP-FL   PIC X(1).
+063500             88  CNTL-2B-SHIFT-VCNY-DISP-NO   VALUES 'N' ' '.
+063600             88  CNTL-2B-SHIFT-VCNY-DISP-YES  VALUE  'Y'.
+063700         04  CNTL-2B-LAST-AUTO-CALL-DTTM.
+063800             06  CNTL-2B-LAST-AUTO-CALL-DT PIC X(6).
+063900             06  CNTL-2B-LAST-AUTO-CALL-TM PIC X(4).
+064000*CNBD587:CNAC-40-REQ 4.9G-START
+064100*        04  FILLER                       PIC X(021).
+064200         04  CNTL-2B-SINGLE-THRD             PIC X(1).
+064300         04  CNTL-2B-TOLERANCE               PIC X(2).
+064400         04  CNTL-2B-IVR-CC-PRTY-PROF        PIC X(8).
+064500         04  CNTL-2B-IVR-SORT-PROF           PIC X(8).
+064600         04  CNTL-2B-MISS-CAL-PAUSE          PIC X(1).
+064700         04  CNTL-2B-DISP-VCNY               PIC X(1).
+064800*CNBD587:CNAC-40-REQ 4.9G-END
+064900*        04  FILLER                       PIC X(045).
+065000*CNBD587A-END
+065100*
+065200*CNC0582 - END
+065300         04  CNTL-2B-UPDATE-FILLER        PIC X(18).
+065400*CNBD587:CNAC-44-BEG
+065500******************  CNTL-AREA-1C **************************
+065600*
+065700     02  CNTL-AREA-2C REDEFINES CNTL-AREA.
+065800         04  FILLER                       PIC X(004).
+065900         04  CNTL-2C-SUB-DIST             PIC X(002).
+066000         04  FILLER                       PIC X(014).
+066100         04  CNTL-2C-IVR-HOME-FLAG    PIC X(01).
+066200             88  CNTL-2C-IVR-HOME-OFF         VALUE ' ' 'N'.
+066300             88  CNTL-2C-IVR-HOME-ON          VALUE 'Y'.
+066400         04  CNTL-2C-IVR-AWAY-FLAG    PIC X(01).
+066500             88  CNTL-2C-IVR-AWAY-OFF         VALUE ' ' 'N'.
+066600             88  CNTL-2C-IVR-AWAY-ON          VALUE 'Y'.
+066700         04  CNTL-2C-IVR-YARD-FL          PIC X(01).
+066800             88  CNTL-IVR-YARD-ON                 VALUE 'Y'.
+066900         04  CNTL-2C-IVR-LOCAL-FL         PIC X(01).
+067000             88  CNTL-IVR-LOCAL-ON                VALUE 'Y'.
+067100         04  CNTL-2C-IVR-WINDW-MIN        PIC X(02).
+067200         04  FILLER                       PIC X(212).
+067300         04  CNTL-2C-UPDATE-FILLER        PIC X(18).
+067400*CNBD587:CNAC-44-END
+067500******************  CNTL-AREA-03 **************************
+067600*
+067700     02  CNTL-AREA-03 REDEFINES CNTL-AREA.
+067800         04  FILLER                   PIC X(6).
+067900         04  CNTL-POOL-CODE           PIC XX.
+068000         04  CNTL-POOL-TYPE           PIC X.
+068100         04  FILLER                   PIC X(11).
+068200         04  CNTL-POOL-NAME           PIC X(10).
+068300         04  CNTL-POOL-HOME           PIC X(14).
+068400         04  CNTL-POOL-HOME-STATION   PIC X(5).
+068500         04  CNTL-POOL-HOME-LEAD-TIME PIC 9999.
+068600         04  CNTL-HOME-TERM-CODE      PIC X(5).
+068700         04  CNTL-POOL-CRAFTS.
+068800             06  CNTL-POOL-EN-CRAFT     PIC X.
+068900             06  CNTL-POOL-FI-CRAFT     PIC X.
+069000             06  CNTL-POOL-CO-CRAFT     PIC X.
+069100             06  CNTL-POOL-B1-CRAFT     PIC X.
+069200             06  CNTL-POOL-B2-CRAFT     PIC X.
+069300             06  CNTL-POOL-SE-CRAFT     PIC X.
+069400             06  CNTL-POOL-BG-CRAFT     PIC X.
+069500             06  CNTL-POOL-AC-CRAFT     PIC X.
+069600         04  CNTL-POOL-MARRIED-CODES.
+069700             06  CNTL-EN-FI             PIC X.
+069800             06  CNTL-CO-B1-B2          PIC X.
+069900             06  CNTL-B1-B2             PIC X.
+070000             06  CNTL-EN-ET             PIC X.
+070100             06  CNTL-CO-TT             PIC X.
+070200         04  CNTL-ALT-DIST     PIC XX.
+070300         04  CNTL-ALT-SUB-DIST PIC XX.
+070400         04  CNTL-ALT-EN-POOL  PIC XX.
+070500         04  CNTL-ALT-TR-POOL  PIC XX.
+070600         04  CNTL-POOL-ASGN-POOL     PIC X(1).
+070700         04  CNTL-03-DISPLAY-UNRESTED  PIC  X.
+070800         04  CNTL-POOL-RETAIN-POS-ARRAY.
+070900             06  CNTL-POOL-RETAIN-POS-CODE OCCURS 5 TIMES
+071000                                     PIC X.
+071100         04  CNTL-POOL-REST-CODE     PIC X.
+071200             88  CNTL-POOL-US-REST         VALUE '1'.
+071300             88  CNTL-POOL-CAN-REST        VALUE '2'.
+071400         04  CNTL-POOL-MISSED-CALL   PIC X.
+071500             88  CNTL-POOL-MC-RETAIN-POS   VALUE '1'.
+071600             88  CNTL-POOL-MC-CLOCK-TIME   VALUE '2'.
+071700             88  CNTL-POOL-MC-TRAIN-TIME   VALUE '3'.
+071800             88  CNTL-POOL-MC-OFF-BOARD    VALUE '4'.
+071900         04  CNTL-POOL-EXTRA-REST     PIC X(4).
+072000         04  CNTL-POOL-SHORT-MILES    PIC XXX.
+072100         04  CNTL-POOL-SHORT-MILES-NUM REDEFINES
+072200             CNTL-POOL-SHORT-MILES    PIC 999.
+072300         04  CNTL-POOL-SHORT-REST     PIC X(4).
+072400         04  CNTL-BASIC-DAY-MILES     PIC 9(3).
+072500         04  CNTL-IDIV-POOL-INFO.
+072600             06  IDIV-POOL-TYPE       PIC X.
+072700                 88 IDIV-QUOTA-NO-TYPE       VALUE '1'.
+072800                 88 IDIV-QUOTA-TIME-TYPE     VALUE '2'.
+072900                 88 IDIV-STANDARD-TYPE       VALUE '3'.
+073000                 88 IDIV-AWAY-BEFORE-HOME    VALUE '4'.
+073100             06  IDIV-EN-QUOTA        PIC XX.
+073200             06  IDIV-EN-QUOTA-NUM REDEFINES IDIV-EN-QUOTA
+073300                                      PIC 99.
+073400             06  IDIV-EN-QUOTA-TIME   PIC X(4).
+073500             06  IDIV-EN-QUOTA-TIME-NUM
+073600                  REDEFINES IDIV-EN-QUOTA-TIME PIC 9(4).
+073700             06  IDIV-TR-QUOTA          PIC XX.
+073800             06  IDIV-TR-QUOTA-NUM REDEFINES IDIV-TR-QUOTA PIC 99.
+073900             06  IDIV-TR-QUOTA-TIME     PIC X(4).
+074000             06  IDIV-TR-QUOTA-TIME-NUM
+074100                 REDEFINES IDIV-TR-QUOTA-TIME PIC 9(4).
+074200             06  IDIV-MINIMUM-AWAY-TIME.
+074300                 08  IDIV-MINIMUM-AWAY-TIME-NUM PIC 9(4).
+074400         04  CNTL-POOL-SVC                PIC X(1).
+074500             88  INTERDIVISIONAL-POOL         VALUE 'I'.
+074600             88  FREIGHT-POOL                 VALUE 'F'.
+074700             88  MINE-TURN-POOL               VALUE 'M'.
+074800             88  WORK-TRAIN-POOL              VALUE 'W'.
+074900             88  LOCAL-POOL                   VALUE 'L'.
+075000             88  CNTL-SHORT-TURN-SERVICE      VALUES 'M' 'S'.
+075100         04  CNTL-AWAY-TERMS-AREA.
+075200             06  CNTL-POOL-AWAY.
+075300                 08  CNTL-POOL-AWAY-1     PIC X.
+075400                 08  FILLER               PIC X(13).
+075500             06  CNTL-POOL-AWAY-STATION   PIC X(5).
+075600             06  CNTL-POOL-AWAY-LEAD-TIME PIC 9(4).
+075700             06  FILLER                   PIC X(92).
+075800
+075900         04  CNTL-AWAY-TERMS-ARRAY REDEFINES
+076000             CNTL-AWAY-TERMS-AREA.
+076100             05  CNTL-AWAY OCCURS 5 TIMES.
+076200                 06  CNTL-AWAY-TERM       PIC X(14).
+076300                 06  CNTL-AWAY-STATION    PIC X(5).
+076400                 06  CNTL-AWAY-LTIME      PIC 9(4).
+076500         04  CNTL-POOL-JOB-TYPE           PIC XX.
+076600         04  CNTL-POOL-ACCT-PROF          PIC X(8).
+076700         04  CNTL-POOL-GUAR-PROF-EN       PIC X(8).
+076800         04  CNTL-POOL-RATE-CODE          PIC X.
+076900         04  CNTL-POOL-CYCLE-CODE         PIC X(1).
+077000         04  CNTL-POOL-ZAP-FLAG           PIC X.
+077100*
+077200******************  CNTL-AREA-3A ***************************
+077300*
+077400     02  CNTL-AREA-3A REDEFINES CNTL-AREA.
+077500         04  CNTL-REC-TYPE-3A         PIC XX.
+077600         04  CNTL-DIST-3A             PIC XX.
+077700         04  CNTL-SUB-DIST-3A         PIC XX.
+077800         04  CNTL-POOL-CODE-3A        PIC XX.
+077900         04  CNTL-POOL-TYPE-3A        PIC X.
+078000         04  FILLER                   PIC X(11).
+078100         04  CNTL-POOL-CREW-PROF      PIC X(08).
+078200         04  CNTL-POOL-ALT-VRU.
+078300             06  CNTL-POOL-ALT-VRU-DIST   PIC X(02).
+078400             06  CNTL-POOL-ALT-VRU-SDIST  PIC X(02).
+078500             06  CNTL-POOL-ALT-VRU-POOL   PIC X(02).
+078600             06  CNTL-POOL-ALT-VRU-TERM   PIC X(01).
+078700         04  CNTL-POOL-RUN-NUMBER         PIC X(004).
+078800         04  FILLER                       PIC X(001).
+078900         04  CNTL-POOL-UNDIST-REST-FLAG   PIC X(001).
+079000             88  CNTL-POOL-UNDIST-REST          VALUE 'Y'.
+079100         04  CNTL-POOL-MERGER-CLASS       PIC X(002).
+079200         04  CNTL-POOL-SPREAD-TIME-ARRAY.
+079300             06  CNTL-POOL-SPREAD-TIME-AREA OCCURS 6.
+079400                 08  CNTL-POOL-EN-SPRD-FR PIC 9(004).
+079500                 08  CNTL-POOL-EN-SPRD-TO PIC 9(004).
+079600                 08  CNTL-POOL-TR-SPRD-FR PIC 9(004).
+079700                 08  CNTL-POOL-TR-SPRD-TO PIC 9(004).
+079800         04  CNTL-POOL-MERGER-SYM         PIC X(001).
+079900         04  CNTL-POOL-BLE-BLOCK          PIC X(002).
+080000         04  CNTL-POOL-UTU-BLOCK          PIC X(002).
+080100         04  CNTL-POOL-ASGNMT-DESIGNATION PIC X(001).
+080200         04  CNTL-POOL-GUAR-AMT-CD-EN     PIC X(1).
+080300         04  CNTL-POOL-GUAR-PROF-TR       PIC X(8).
+080400         04  CNTL-POOL-GUAR-AMT-CD-TR     PIC X(1).
+080500*CNC0574 - BEG
+080600***      04  CNTL-ALLOW-TO                PIC X(1).
+080700***          88  CNTL-ALLOW-TIME-OFF               VALUE 'Y'.
+080800         04  CNTL-ALLOW-TO-EN             PIC X(1).
+080900             88  CNTL-ALLOW-TIME-OFF-EN            VALUE 'Y'.
+081000*CNC0574 - END
+081100         04  CNTL-POOL-HOME-AWAY-FL       PIC X(1).
+081200             88  CNTL-POOL-IS-HOME                 VALUES ' ' 'H'.
+081300             88  CNTL-POOL-IS-AWAY                 VALUE  'A'.
+081400*CNC0600
+081500             88  CNTL-POOL-IS-OUTPOST              VALUE  'O'.
+081600         04  CNTL-POOL-LEAD-TIME-FLAG     PIC X(1).
+081700             88  CNTL-POOL-IGNORE-LEAD-TIME        VALUE 'Y'.
+081800         04  CNTL-3A-UPDATE-DATE          PIC X(006).
+081900         04  CNTL-3A-UPDATE-TIME          PIC X(004).
+082000         04  CNTL-3A-UPDATE-USERID        PIC X(008).
+082100         04  CNTL-3A-HOME-IVR-PROF        PIC X(008).
+082200         04  CNTL-3A-AWAY-IVR-PROF OCCURS 5 TIMES
+082300                                          PIC X(008).
+082400         04  CNTL-3A-TAXI-TIMES    OCCURS 6 TIMES.
+082500             06  CNTL-3A-TAXI-TIME        PIC X(004).
+082600*CNC0574 - BEG
+082700***      04  CNTL-POOL-ALLOW-DROP-TURN-FL PIC X(001).
+082800***          88  CNTL-POOL-ALLOW-DROP-TURN         VALUE  'Y'.
+082900***          88  CNTL-POOL-ALLOW-DROP-TURN-NO      VALUES ' ' 'N'.
+083000         04  CNTL-POOL-ALLOW-DROP-EN-FL   PIC X(001).
+083100             88  CNTL-POOL-ALLOW-DROP-EN           VALUE  'Y'.
+083200             88  CNTL-POOL-ALLOW-DROP-EN-NO        VALUES ' ' 'N'.
+083300*CNC0574 - END
+083400         04  CNTL-3A-BIDPK-TIEBRK-FL      PIC X(001).
+083500             88  CNTL-3A-BIDPK-TIEBRK-PW-BRD       VALUE  'B'.
+083600             88  CNTL-3A-BIDPK-TIEBRK-PROT-W       VALUES ' ' 'P'.
+083700*CNC0574 - BEG
+083800***      04  FILLER                       PIC X(006).
+083900         04  CNTL-ALLOW-TO-TM             PIC X(001).
+084000             88  CNTL-ALLOW-TIME-OFF-TM            VALUE 'Y'.
+084100         04  CNTL-POOL-ALLOW-DROP-TM-FL   PIC X(001).
+084200             88  CNTL-POOL-ALLOW-DROP-TM           VALUE  'Y'.
+084300             88  CNTL-POOL-ALLOW-DROP-TM-NO        VALUES ' ' 'N'.
+084400         04  FILLER                       PIC X(004).
+084500*CNC0574 - END
+084600*CNC0575 - BEG
+084700*
+084800******************  CNTL-AREA-3B ***************************
+084900*
+085000     02  CNTL-AREA-3B REDEFINES CNTL-AREA.
+085100         04  CNTL-REC-TYPE-3B           PIC XX.
+085200         04  CNTL-DIST-3B               PIC XX.
+085300         04  CNTL-SUB-DIST-3B           PIC XX.
+085400         04  CNTL-POOL-CODE-3B          PIC XX.
+085500         04  CNTL-POOL-TYPE-3B          PIC X.
+085600         04  FILLER                     PIC X(11).
+085700         04  CNTL-3B-HELDAWAY-CODES OCCURS 5 TIMES.
+085800             06  CNTL-3B-HELDAWAY-CODE  PIC X(02).
+085900         04  FILLER                     PIC X(226).
+086000*CNC0575 - END
+086100*
+086200******************  CNTL-AREA-04 **************************
+086300*
+086400     02  CNTL-AREA-04 REDEFINES CNTL-AREA.
+086500         04  FILLER                     PIC X(8).
+086600         04  CNTL-POOL-TURN.
+086700             06  CNTL-POOL-TURN-PREFIX  PIC XX.
+086800             06  CNTL-POOL-TURN-NO      PIC XX.
+086900         04  CNTL-POOL-CC               PIC XX.
+087000         04  FILLER                     PIC X(6).
+087100         04  FILLER                     PIC X(236).
+087200*
+087300******************  CNTL-AREA-05 **************************
+087400*
+087500     02  CNTL-AREA-05 REDEFINES CNTL-AREA.
+087600         04  FILLER                     PIC X(8).
+087700         04  CNTL-UFP-CRAFT             PIC XX.
+087800         04  CNTL-UFP-SVC               PIC X.
+087900*               'T' FOR THROUGH FREIGHT  'S' FOR SHORT-TURN
+088000         04  CNTL-UFP-TERM              PIC X.
+088100*                0 = HOME OR 1 THRU 5
+088200         04  CNTL-UFP-ARR-TYPE          PIC X.
+088300*               'D' FOR DEADHEAD; 'Y' FOR INSIDE YARD LIMITS
+088400*               'R' FOR RELIEVED
+088500         04  CNTL-UFP-REST-REQ          PIC X.
+088600*               'Y' FOR ADD REST REQUIREMENT
+088700         04  CNTL-UFP-HOME-AWAY         PIC X.
+088800*               'H' FOR HOME; 'A' FOR AWAY
+088900         04  FILLER                     PIC X(5).
+089000         04  CNTL-TIEUP-THRU            PIC X.
+089100             88  CNTL-TU-THRU-HOME-ODT         VALUE '1'.
+089200             88  CNTL-TU-THRU-ODT              VALUE '2'.
+089300             88  CNTL-TU-THRU-ARR              VALUE '3'.
+089400             88  CNTL-TU-THRU-TUT              VALUE '4'.
+089500             88  CNTL-TU-THRU-OP               VALUE '5'.
+089600             88  CNTL-TU-THRU-YARD-TIME        VALUE '6'.
+089700             88  CNTL-TU-THRU-BOARD-TIME       VALUE '7'.
+089800         04  CNTL-ADD-REST              PIC X.
+089900             88  CNTL-ADD-REST-YES             VALUE 'Y'.
+090000             88  CNTL-ADD-REST-NO              VALUE 'N', ' '.
+090100         04  CNTL-CARRIED-TURN          PIC X.
+090200             88  CNTL-CR-AFTER                 VALUE 'A'.
+090300             88  CNTL-CR-BEFORE                VALUE 'B'.
+090400         04  CNTL-05-UPDATE-DATE        PIC X(06).
+090500         04  CNTL-05-UPDATE-TIME        PIC X(04).
+090600         04  CNTL-05-UPDATE-USER        PIC X(08).
+090700         04  FILLER                     PIC X(215).
+090800*
+090900******************  CNTL-AREA-06 **************************
+091000*
+091100* GO LOOK IN TRAIN PROFILE
+091200*
+091300*    02  CNTL-AREA-06 REDEFINES CNTL-AREA.
+091400*        04  FILLER            PIC X(6).
+091500*        04  CNTL-AJ-JOB-NO.
+091600*     06  CNTL-AJ-JOB-NO-1234  PIC X(4).
+091700*     06  CNTL-AJ-JOB-NO-56    PIC X(2).
+091800*        04  FILLER      PIC X(8).
+091900*        04  CNTL-AJ-ALT-DIST     PIC XX.
+092000*        04  CNTL-AJ-ALT-SUB-DIST     PIC XX.
+092100*        04  CNTL-AJ-LOCAL-CODE     PIC X.
+092200*   88  CNTL-AJ-OUTSIDE-JOB      VALUE 'O'.
+092300*   88  CNTL-AJ-TERMINAL-JOB      VALUE 'T'.
+092400*        04  CNTL-AJ-HOME-TERM-CODE   PIC X(5).
+092500*        04  FILLER      PIC X(98).
+092600*        04  FILLER      PIC X(128).
+092700**
+092800******************  CNTL-AREA-08 **************************
+092900*
+093000     02  CNTL-AREA-08 REDEFINES CNTL-AREA.
+093100         04  FILLER               PIC X(6).
+093200         04  CNTL-XB              PIC XX.
+093300         04  FILLER               PIC X(12).
+093400         04  FILLER               PIC X(4).
+093500         04  CNTL-XB-ROSTER-CC    PIC XX.
+093600         04  CNTL-XB-TYPE         PIC X.
+093700             88  FIFO-XB                  VALUE '1'.
+093800             88  POSITION-XB              VALUE '2'.
+093900             88  SLOT-BOARD               VALUE '2'.
+094000             88  ROTARY-XB                VALUE '3'.
+094100             88  DUAL-XB                  VALUE '4'.
+094200             88  TAG-XB                   VALUE '5',
+094300                                                '6'.
+094400             88  TAG-A-XB                 VALUE '5'.
+094500             88  TAG-B-XB                 VALUE '6'.
+094600             88  FASTSLOW-XB              VALUE '7'.
+094700         04  CNTL-XB-DESC             PIC X(59).
+094800         04  CNTL-XB-GUARANTEE-CODE   PIC X.
+094900             88  GUARANTEED-XB             VALUE 'Y'.
+095000         04  CNTL-XB-LO-LOGIC-CODE    PIC X.
+095100             88  LEAVE-TURN-ON-XB-FOR-LO   VALUE 'R'.
+095200         04  CNTL-XB-POSITION-FLAG    PIC X.
+095300             88  CNTL-XB-POS-BY-ARR        VALUE '1'.
+095400             88  CNTL-XB-POS-BY-ODT        VALUE '2'.
+095500             88  CNTL-XB-POS-BY-TU         VALUE '3'.
+095600             88  CNTL-XB-POS-BY-ODT-8      VALUE '4'.
+095700             88  CNTL-XB-POS-BY-BRD        VALUE '5'.
+095800         04  FILLER                   PIC X.
+095900         04  CNTL-XB-SHORT-TURN-FLAG  PIC X.
+096000             88  CNTL-XB-SHORT-TURN        VALUE 'Y'.
+096100         04  CNTL-XB-SHORT-TURN-MILES PIC X(3).
+096200         04  CNTL-XB-SHORT-TURN-MILES-NUM REDEFINES
+096300             CNTL-XB-SHORT-TURN-MILES PIC 9(3).
+096400         04  CNTL-XB-SCHEDULED-FLAG   PIC X.
+096500             88  CNTL-XB-SCHEDULED-NO      VALUE ' ' 'N'.
+096600             88  CNTL-XB-SCHEDULED         VALUE 'Y'.
+096700             88  CNTL-XB-EXTENDED-SCHED    VALUE 'E'.
+096800         04  CNTL-XB-MAX-SHORT-TURNS-X  PIC X.
+096900         04  CNTL-XB-MAX-SHORT-TURNS REDEFINES
+097000             CNTL-XB-MAX-SHORT-TURNS-X  PIC 9.
+097100         04  CNTL-XB-RETAIN-POS-STATUS.
+097200               06  CNTL-XB-RETAIN-POS  OCCURS 5 TIMES
+097300                                      PIC X.
+097400         04  CNTL-XB-HOME-TERM-CODE   PIC X(5).
+097500         04  CNTL-EXTRA-REST          PIC X(4).
+097600         04  CNTL-DH-EXCEPTION-MILES  PIC XXX.
+097700         04  CNTL-XB-ACCT-PROF        PIC X(8).
+097800         04  CNTL-XB-GUAR-PROF        PIC X(8).
+097900         04  CNTL-XB-JOB-TYPE         PIC X(2).
+098000         04  CNTL-XB-RATE-CODE        PIC X(1).
+098100         04  CNTL-XB-FURLOUGH-CODE    PIC X(1).
+098200             88  CNTL-FURLOUGH-BOARD      VALUE 'Y'.
+098300         04  CNTL-XB-RESET-ST-FLAG    PIC X(001).
+098400             88  CNTL-XB-RESET-STARTS     VALUE 'Y'.
+098500         04  CNTL-XB-POS-YARD-FLAG    PIC X(001).
+098600             88  CNTL-XB-POS-YD-ARR        VALUE '1'.
+098700             88  CNTL-XB-POS-YD-ODT        VALUE '2'.
+098800             88  CNTL-XB-POS-YD-TU         VALUE '3'.
+098900             88  CNTL-XB-POS-YD-ODT-8      VALUE '4'.
+099000*CNC0548
+099100         04  FILLER                   PIC X.
+099200***      04  CNTL-XB-RESET-LO-FLAG    PIC X(001).
+099300***          88  CNTL-XB-RESET-LAYOFF     VALUE 'Y'.
+099400*CNC0548 - END
+099500         04  CNTL-XB-UPDATE-ST-FLAG   PIC X(001).
+099600             88  CNTL-XB-UPDATE-ADD        VALUE '1'.
+099700             88  CNTL-XB-UPDATE-RETAIN     VALUE '2'.
+099800             88  CNTL-XB-UPDATE-RESET      VALUE '3'.
+099900         04  CNTL-XB-ADD-REST-FLAG    PIC X(001).
+100000             88  CNTL-XB-ADD-REST-YES      VALUE 'Y'.
+100100             88  CNTL-XB-ADD-REST-NO       VALUE 'N', ' '.
+100200         04  CNTL-XB-TYPE-SVC         PIC X(001).
+100300             88  CNTL-XB-YARD-SVC          VALUE '1'.
+100400             88  CNTL-XB-ROAD-SVC          VALUE '2'.
+100500             88  CNTL-XB-JOINT-SVC         VALUE '3'.
+100600         04  CNTL-XB-SCHEDULED-TYPE   PIC X(001).
+100700             88  CNTL-XB-SCHED-REGULAR     VALUE 'R'.
+100800             88  CNTL-XB-SCHED-XTRABOARD   VALUE 'X'.
+100900         04  CNTL-XB-SCHEDULED-ROTATE  PIC X(001).
+101000             88  CNTL-XB-SCHED-ROTATE      VALUE 'Y'.
+101100             88  CNTL-XB-SCHED-NO-ROTATE   VALUE 'N', ' '.
+101200         04  CNTL-XB-TRACK-FLAG       PIC X(1).
+101300             88  CNTL-XB-TRACK          VALUE 'Y'.
+101400         04  CNTL-XB-TRACK-ALL-FLAG   PIC X(1).
+101500             88  CNTL-XB-TRACK-ALL      VALUE 'Y'.
+101600         04  CNTL-XB-MU-ROT-FLAG      PIC X(001).
+101700             88  ROTATE-ALL               VALUE ' '.
+101800             88  ROTATE-IF-STATUS-EQUAL   VALUE '1', '3'.
+101900             88  ROTATE-IF-LOST-WORK      VALUE '2'.
+102000             88  ROTATE-ORIGINAL-POS      VALUE '3'.
+102100             88  DO-NOT-ROTATE            VALUE '4'.
+102200             88  ROTATE-LST-WRK-ORIG-POS  VALUE '5'.
+102300         04  CNTL-XB-MU-ROT-STATUSES.
+102400             05  CNTL-XB-MU-ROT-STAT  PIC X(001) OCCURS 10.
+102500         04  CNTL-XB-ASSIGNED-YDM-DATA.
+102600             06  CNTL-AYDM-XB-CYCLE          PIC X(001).
+102700             06  CNTL-AYDM-XB-CYCLE-TIME     PIC X(004).
+102800             06  CNTL-AYDM-XB-RESET-SEN-FLAG PIC X(001).
+102900                 88 CNTL-AYDM-XB-RESET-SEN         VALUE 'Y'.
+103000         04  CNTL-XB-BLE-DATA.
+103100             06  CNTL-BLE-XB-CYCLE           PIC X(001).
+103200             06  CNTL-BLE-XB-CYCLE-TIME      PIC X(004).
+103300             06  CNTL-BLE-XB-RESET-SEN-FLAG  PIC X(001).
+103400                 88 CNTL-BLE-XB-RESET-SEN          VALUE 'Y'.
+103500         04  CNTL-XB-UTU-DATA.
+103600             06  CNTL-UTU-XB-CYCLE           PIC X(001).
+103700             06  CNTL-UTU-XB-CYCLE-TIME      PIC X(004).
+103800             06  CNTL-UTU-XB-RESET-SEN-FLAG  PIC X(001).
+103900                 88 CNTL-UTU-XB-RESET-SEN          VALUE 'Y'.
+104000         04  CNTL-XB-YDM-DATA.
+104100             06  CNTL-YDM-XB-CYCLE           PIC X(001).
+104200             06  CNTL-YDM-XB-CYCLE-TIME      PIC X(004).
+104300             06  CNTL-YDM-XB-RESET-SEN-FLAG  PIC X(001).
+104400                 88 CNTL-YDM-XB-RESET-SEN          VALUE 'Y'.
+104500         04  CNTL-XB-NBR-ELIGIBLE     PIC X(003).
+104600         04  CNTL-XB-MERG-CLASS       PIC X(002).
+104700         04  CNTL-XB-GUAR-CA          PIC X(002).
+104800         04  CNTL-XB-MERG-SYM         PIC X(001).
+104900         04  CNTL-XB-BID-BLOCK        PIC X(002).
+105000         04  CNTL-XB-ASGNMT-DESIGNATION PIC X(001).
+105100         04  CNTL-XB-GUAR-AMT-CD      PIC X(001).
+105200         04  CNTL-XB-UPDATE-DATE       PIC X(06).
+105300         04  CNTL-XB-UPDATE-TIME       PIC X(04).
+105400         04  CNTL-XB-UPDATE-USERID     PIC X(08).
+105500*CNC0548
+105600***      04  FILLER                   PIC X(047).
+105700         04  CNTL-XB-ALLOW-DROP-TURN-FL PIC X(001).
+105800             88 CNTL-XB-ALLOW-DROP-TURN    VALUE 'Y'.
+105900             88 CNTL-XB-ALLOW-DROP-TURN-NO VALUE 'N', ' '.
+106000*CNC0553 - BEG
+106100         04  CNTL-XB-RETENTION-CODE   PIC X(001).
+106200             88 CNTL-RETENTION-BOARD       VALUE 'Y'.
+106300         04  FILLER                   PIC X(045).
+106400*CNC0553 - END
+106500         04  CNTL-EB-ZAP-FLAG         PIC X.
+106600**
+106700******************  CNTL-AREA-09 **************************
+106800*
+106900     02  CNTL-AREA-09 REDEFINES CNTL-AREA.
+107000         04  FILLER                   PIC X(006).
+107100         04  CNTL-PXB-CC-XB           PIC X(002).
+107200         04  CNTL-PXB-TYPE            PIC X(001).
+107300         04  CNTL-PXB-ASGN            PIC X(006).
+107400         04  FILLER                   PIC X(005).
+107500         04  CNTL-PXB-DIST            PIC X(002).
+107600         04  CNTL-PXB-SUB-DIST        PIC X(002).
+107700         04  CNTL-PXB-ID              PIC X(002).
+107800         04  CNTL-SEN-VAC-ROSTER      PIC X(008).
+107900         04  CNTL-SEN-SERVICE-TYPE    PIC X(001).
+108000             88  CNTL-SEN-VALID-SERVICE     VALUES '1' '2' '3'.
+108100             88  CNTL-SEN-BLE-SERVICE       VALUE '1'.
+108200             88  CNTL-SEN-UTU-ROAD-SERVICE  VALUE '2'.
+108300             88  CNTL-SEN-UTU-YARD-SERVICE  VALUE '3'.
+108400         04  CNTL-SEN-BLOCK           PIC X(002).
+108500             88  CNTL-SEN-VALID-BLOCK       VALUE '01' THRU '09'.
+108600         04  CNTL-SEN-LIST OCCURS 20 TIMES.
+108700             06  CNTL-SEN-ROSTER      PIC X(004).
+108800             06  CNTL-SEN-ROSTER-CC   PIC X(002).
+108900         04  FILLER                   PIC X(99).
+109000**
+109100******************  CNTL-AREA-10 **************************
+109200*
+109300     02  CNTL-AREA-10 REDEFINES CNTL-AREA.
+109400         04  FILLER                PIC XX.
+109500         04  CNTL-P-ROSTER-CODE    PIC X(4).
+109600         04  CNTL-ROSTER-CC        PIC XX.
+109700         04  FILLER                PIC X(12).
+109800         04  CNTL-ROSTER-DESC      PIC X(25).
+109900         04  CNTL-ROSTER-TYPE      PIC X.
+110000             88  CNTL-DATE-ROSTER          VALUE 'D'.
+110100             88  CNTL-RANK-ROSTER          VALUE 'R'.
+110200         04  CNTL-REF-P-ROSTER-CODE   PIC X(4).
+110300         04  CNTL-REF-ADJ             PIC X(4).
+110400         04  CNTL-REF-ADJ-NUM REDEFINES CNTL-REF-ADJ PIC 9(4).
+110500         04  CNTL-10-UPDATE-DATE      PIC X(6).
+110600         04  CNTL-10-UPDATE-TIME      PIC X(4).
+110700         04  CNTL-10-UPDATE-USERID    PIC X(8).
+110800         04  FILLER                   PIC X(184).
+110900**
+111000******************  CNTL-AREA-11 **************************
+111100*
+111200     02  CNTL-AREA-11 REDEFINES CNTL-AREA.
+111300         04  FILLER                PIC XX.
+111400         04  CNTL-VAC-ROSTER-CRAFT PIC XX.
+111500         04  CNTL-VAC-YEAR         PIC XX.
+111600         04  FILLER                PIC X(14).
+111700         04  CNTL-VAC-ROSTER-CODE  PIC X(04).
+111800         04  CNTL-VAC-RUN-DATE     PIC X(06).
+111900         04  FILLER                PIC X(226).
+112000**
+112100******************  CNTL-AREA-12 **************************
+112200*
+112300     02  CNTL-AREA-12 REDEFINES CNTL-AREA.
+112400         04  FILLER                 PIC X(2).
+112500         04  CNTL-QUAL-CODE.
+112600             05  FILLER             PIC X(1).
+112700                 88  CNTL-QUAL-AUTO-RENEW-OLD   VALUE '&'.
+112800                 88  CNTL-QUAL-AUTO-RENEW       VALUE '#'.
+112900             05  FILLER             PIC X(3).
+113000         04  FILLER                 PIC X(14).
+113100         04  CNTL-QUAL-DESC         PIC X(26).
+113200         04  CNTL-QUAL-FUTURE-DATE  PIC X.
+113300             88  FUTURE-DATE-ALLOWED        VALUE 'Y'.
+113400         04  CNTL-QUAL-ONE-TYPE-CODE  PIC X.
+113500             88  CNTL-ONE-TYPE-ONLY         VALUE 'Y'.
+113600         04  CNTL-QUAL-GRANDPA-CLAUSE PIC X.
+113700             88  GRANDFATHER-CLAUSE         VALUE 'Y'.
+113800         04  FILLER                 PIC X(02).
+113900         04  CNTL-QUAL-RENEW-DAYS   PIC X(03).
+114000         04  CNTL-QUAL-TRIP-CNTR    PIC X(02).
+114100         04  CNTL-QUAL-ENG-OJT-TRNR PIC X(01).
+114200             88  ENGINEER-OJT-TRAINER       VALUE 'Y'.
+114300         04  CNTL-QUAL-OJT-CODE     PIC X(04).
+114400         04  CNTL-QUAL-DISP-SB-MAINT  PIC X(01).
+114500         04  CNTL-QUAL-BULL-FLAG      PIC X(01).
+114600             88  CNTL-QUAL-BULLETIN         VALUE 'Y'.
+114700         04  CNTL-QUAL-RD-YD-FLAG     PIC X(01).
+114800             88  CNTL-QUAL-RD-YD-PREF       VALUE 'Y'.
+114900         04  CNTL-QUAL-RQ-HOL-FLAG    PIC X(01).
+115000             88  CNTL-QUAL-RQ-HOL           VALUE 'Y'.
+115100         04  CNTL-12-UPDATE-DATE      PIC X(6).
+115200         04  CNTL-12-UPDATE-TIME      PIC X(4).
+115300         04  CNTL-12-UPDATE-USER      PIC X(8).
+115400*CNC0520-BEG
+115500         04  CNTL-TERR-QUAL         PIC X.
+115600             88  TERR-QUAL-Y                VALUE 'Y'.
+115700         04  CNTL-TERR-QUAL-REQ     PIC X.
+115800             88  TERR-QUAL-REQ              VALUE 'Y'.
+115900             88  TERR-QUAL-W-PILOT          VALUE 'P'.
+116000*        04  FILLER                   PIC X(173).
+116100         04  FILLER                   PIC X(171).
+116200*CNC0520-END
+116300**
+116400******************  CNTL-AREA-13 **************************
+116500*
+116600     02  CNTL-AREA-13 REDEFINES CNTL-AREA.
+116700         04  FILLER                 PIC X(2).
+116800         04  CNTL-QUAL-DIST         PIC X(2).
+116900         04  CNTL-QUAL-SUB-DIST     PIC X(2).
+117000         04  CNTL-ASG-QUAL-TYPE     PIC X.
+117100             88  CNTL-ASSIGNED-JOB-QUAL       VALUE 'A'.
+117200             88  CNTL-UFP-QUAL                VALUE 'P'.
+117300         04  CNTL-QUAL-JOB-CODE     PIC X(08).
+117400         04  FILLER                 PIC X(05).
+117500         04  CNTL-QUALIFICATION-TABLE.
+117600             08  CNTL-QUALIFICATION-TABLE-ENTRY OCCURS 5 TIMES.
+117700                 12  CNTL-QUALIFICATIO-CHAR1  PIC X(1).
+117800                     88  CNTL-QUAL-RESTRICTION    VALUE '%'.
+117900                 12  FILLER                   PIC X(3).
+118000             08  CNTL-QUAL-SENIORITY-FLAG-ENTRY OCCURS 5 TIMES.
+118100                 12  CNTL-SEN-MOVE-ALLOW-FLAG PIC X(1).
+118200                     88 CNTL-SEN-MOVE-ALLOW   VALUE 'Y'.
+118300         04  CNTL-13-UPDATE-DATE               PIC X(06).
+118400         04  CNTL-13-UPDATE-TIME               PIC X(04).
+118500         04  CNTL-13-UPDATE-USERID             PIC X(08).
+118600         04  FILLER                 PIC X(193).
+118700**
+118800******************  CNTL-AREA-14 **************************
+118900*
+119000     02  CNTL-AREA-14 REDEFINES CNTL-AREA.
+119100         04  FILLER                           PIC X(002).
+119200         04  CNTL-QUAL-NTFY-CODE              PIC X(004).
+119300         04  FILLER                           PIC X(014).
+119400         04  CNTL-QUAL-NTFY-TYPE              PIC X(001).
+119500             88  CNTL-QUAL-NTFY-ALL               VALUE '1'.
+119600             88  CNTL-QUAL-NTFY-COMPANY           VALUE '2'.
+119700             88  CNTL-QUAL-NTFY-DD-SD             VALUE '3'.
+119800         04  CNTL-QUAL-NTFY-CMPNY-AREA.
+119900             06  CNTL-QUAL-NTFY-CMPNY-ARRAY OCCURS 12 TIMES.
+120000                 08  CNTL-QUAL-NTFY-CMPNY     PIC X(001).
+120100             06  FILLER                       PIC X(084).
+120200         04  CNTL-QUAL-NTFY-DD-SD-AREA REDEFINES
+120300             CNTL-QUAL-NTFY-CMPNY-AREA.
+120400             06  CNTL-QUAL-NTFY-DD-SD-ARRAY OCCURS 24 TIMES.
+120500                 08  CNTL-QUAL-NTFY-DD        PIC X(002).
+120600                 08  CNTL-QUAL-NTFY-SD        PIC X(002).
+120700                     88  CNTL-QUAL-NTFY-SD-WILD   VALUE '**'.
+120800         04  CNTL-QUAL-NTFY-DISPLAY-FL        PIC X(001).
+120900             88  CNTL-QUAL-NTFY-DISPLAY-YES       VALUE 'Y'.
+121000             88  CNTL-QUAL-NTFY-DISPLAY-NO        VALUE 'N' ' '.
+121100         04  CNTL-14-UPDATE-DATE               PIC X(06).
+121200         04  CNTL-14-UPDATE-TIME               PIC X(04).
+121300         04  CNTL-14-UPDATE-USERID             PIC X(08).
+121400         04  FILLER                           PIC X(120).
+121500******************  CNTL-AREA-15 **************************
+121600**
+121700*
+121800* GO LOOK IN TRAIN PROFILE
+121900*
+122000*    02  CNTL-AREA-15 REDEFINES CNTL-AREA.
+122100*        04  FILLER      PIC X(6).
+122200*        04  ZZZZ-CALL-SEQ     PIC 99.
+122300*        04  FILLER      PIC X(12).
+122400*        04  ZZZZ-CALL-DESC     PIC X(22).
+122500*        04  ZZZZ-CALL-EN-AREA.
+122600*   06  ZZZZ-CALL-EN-DIST     PIC XX.
+122700*   06  ZZZZ-CALL-EN-SDIST     PIC XX.
+122800*   06  ZZZZ-CALL-EN-POOL     PIC XX.
+122900*   06  ZZZZ-CALL-EN-I-O     PIC X.
+123000*   06  ZZZZ-CALL-EN-MU     PIC X.
+123100*        04  FILLER      PIC X(8).
+123200*        04  ZZZZ-CALL-CO-AREA.
+123300*   06  ZZZZ-CALL-CO-DIST     PIC XX.
+123400*   06  ZZZZ-CALL-CO-SDIST     PIC XX.
+123500*   06  ZZZZ-CALL-CO-POOL     PIC XX.
+123600*   06  ZZZZ-CALL-CO-I-O     PIC X.
+123700*   06  ZZZZ-CALL-CO-MU     PIC X.
+123800*        04  FILLER      PIC X(8).
+123900*        04  ZZZZ-CALL-TYPE     PIC X.
+124000*        04  FILLER      PIC X(53).
+124100*        04  FILLER      PIC X(128).
+124200**
+124300******************  CNTL-AREA-16 **************************
+124400*
+124500     02  CNTL-AREA-16 REDEFINES CNTL-AREA.
+124600         04  FILLER           PIC X(6).
+124700         04  CNTL-TU-SEQ      PIC 99.
+124800         04  FILLER           PIC X(12).
+124900         04  CNTL-TU-DESC     PIC X(22).
+125000         04  CNTL-EN-FROM-ARRAY.
+125100             06  CNTL-EFA OCCURS 4 TIMES.
+125200               08  CNTL-EN-TU-FROM-DIST  PIC XX.
+125300               08  CNTL-EN-TU-FROM-SDIST PIC XX.
+125400               08  CNTL-EN-TU-FROM-POOL  PIC XX.
+125500               08  CNTL-EN-TU-TO-DIST    PIC XX.
+125600               08  CNTL-EN-TU-TO-SDIST   PIC XX.
+125700               08  CNTL-EN-TU-TO-POOL    PIC XX.
+125800               08  CNTL-EN-TU-TO-I-O     PIC X.
+125900         04  CNTL-CO-FROM-ARRAY.
+126000             06  CNTL-CFA OCCURS 4 TIMES.
+126100               08  CNTL-CO-TU-FROM-DIST  PIC XX.
+126200               08  CNTL-CO-TU-FROM-SDIST PIC XX.
+126300               08  CNTL-CO-TU-FROM-POOL  PIC XX.
+126400               08  CNTL-CO-TU-TO-DIST    PIC XX.
+126500               08  CNTL-CO-TU-TO-SDIST   PIC XX.
+126600               08  CNTL-CO-TU-TO-POOL    PIC XX.
+126700               08  CNTL-CO-TU-TO-I-O     PIC X.
+126800         04  CNTL-SEARCH-ARRAY.
+126900             06  CNTL-SEARCH-AREA OCCURS 4 TIMES.
+127000               08  CNTL-SEARCH-TU-DIST   PIC XX.
+127100               08  CNTL-SEARCH-TU-SDIST  PIC XX.
+127200               08  CNTL-SEARCH-TU-POOL   PIC XX.
+127300         04  CNTL-TU-UPDATE-DATE         PIC X(6).
+127400         04  CNTL-TU-UPDATE-TIME         PIC X(4).
+127500         04  CNTL-TU-UPDATE-USERID       PIC X(8).
+127600         04  FILLER                      PIC X(68).
+127700**
+127800******************  CNTL-AREA-17 **************************
+127900*
+128000     02  CNTL-AREA-17 REDEFINES CNTL-AREA.
+128100         04  FILLER                      PIC X(2).
+128200         04  CNTL-TU-REQ-JOB-TYPE        PIC X(2).
+128300         04  CNTL-TU-REQ-DIST            PIC X(2).
+128400         04  CNTL-TU-REQ-SUB-DIST        PIC X(2).
+128500         04  FILLER                      PIC X(12).
+128600         04  CNTL-TU-REQ-WORK-DETAIL     PIC X(1).
+128700         04  CNTL-TU-REQ-CALCULATE       PIC X(1).
+128800         04  CNTL-TU-REQ-INT-OS          PIC X(1).
+128900         04  CNTL-TU-REQ-FINAL-OS        PIC X(1).
+129000         04  CNTL-TU-REQ-TRAIN-LGTH      PIC X(1).
+129100         04  CNTL-TU-REQ-HELD-OUT        PIC X(1).
+129200         04  FILLER                      PIC X(1).
+129300         04  FILLER                      PIC X(1).
+129400         04  CNTL-TU-REQ-UPDATE-DATE     PIC X(6).
+129500         04  CNTL-TU-REQ-UPDATE-TIME     PIC X(4).
+129600         04  CNTL-TU-REQ-UPDATE-USERID   PIC X(8).
+129700         04  CNTL-TU-REQ-MAX-UNITS       PIC X(1).
+129800         04  CNTL-TU-REQ-WK-BEG-END      PIC X(1).
+129900         04  CNTL-TU-REQ-RESPITE         PIC X(1).
+130000         04  CNTL-TU-REQ-RUN-MILES       PIC X(1).
+130100         04  FILLER                      PIC X(206).
+130200**
+130300**
+130400****************** CNTL-AREA-18 **************************
+130500*
+130600     02 CNTL-AREA-18 REDEFINES CNTL-AREA.
+130700         04 FILLER                   PIC X(06).
+130800         04 CNTL-ANT-ASGN-TYPE       PIC X(01).
+130900         04 CNTL-ANT-ASGN.
+131000            06  CNTL-ANT-BOARD       PIC X(02).
+131100            06  FILLER               PIC X(04).
+131200         04 FILLER                   PIC X(07).
+131300         04 CNTL-ANT-DESC            PIC X(20).
+131400         04 CNTL-ANT-EFF-DATE.
+131500             06 CNTL-ANT-EFF-YR      PIC XX.
+131600             06 CNTL-ANT-EFF-MO      PIC XX.
+131700             06 CNTL-ANT-EFF-DY      PIC XX.
+131800         04 CNTL-ANT-EARNINGS.
+131900             06 CNTL-ANT-EARNING  OCCURS 3 TIMES.
+132000                 08 CNTL-EARN-FROM   PIC X(4).
+132100                 08 CNTL-EARN-TO     PIC X(4).
+132200         04  CNTL-ANT-HOURS.
+132300             06  CNTL-ANT-HOUR    OCCURS 3 TIMES.
+132400                 08  CNTL-HOUR-FROM  PIC X(3).
+132500                 08  CNTL-HOUR-TO    PIC X(3).
+132600         04  CNTL-ANT-RATES.
+132700             06  CNTL-ANT-RATE    OCCURS 3 TIMES.
+132800                 08  CNTL-RATE-DLR   PIC X(2).
+132900                 08  CNTL-RATE-CNT   PIC X(2).
+133000         04  FILLER                  PIC X(156).
+133100
+133200******************  CNTL-AREA-19 **************************
+133300* AUTO PREP TIME CONTROL
+133400     02  CNTL-AREA-19 REDEFINES CNTL-AREA.
+116700         04  FILLER                 PIC X(2).
+               04  CNTL-19-PREP-DIST      PIC X(2).
+               04  CNTL-19-PREP-SUB-DIST  PIC X(2).
+               04  FILLER                 PIC X(14).
+133500         04  CNTL-PREP-TIME-ARRAY   OCCURS 36 TIMES.
+133500            06  CNTL-PREP-JOB-TYPE  PIC X(2).
+133500            06  CNTL-PREP-PREP-TIME.
+133500              08  CNTL-PREP-PREP-HR PIC X(2).
+133500              08  CNTL-PREP-PREP-MN PIC X(2).
+127300         04  CNTL-PREP-UPDATE-DATE  PIC X(6).
+127400         04  CNTL-PREP-UPDATE-TIME  PIC X(4).
+127500         04  CNTL-PREP-UPDATE-USERID PIC X(8).
+               04  FILLER                 PIC X(2).
+133100
+133200******************  CNTL-AREA-20 **************************
+133300*
+133400     02  CNTL-AREA-20 REDEFINES CNTL-AREA.
+133500         04  FILLER              PIC X(6).
+133600         04  CNTL-YARD-ROAD      PIC X.
+133700         04  CNTL-HOLIDAY-DATE.
+133800             05  CNTL-HOLIDAY-YR PIC XX.
+133900             05  CNTL-HOLIDAY-MO PIC XX.
+134000             05  CNTL-HOLIDAY-DY PIC XX.
+134100         04  FILLER              PIC X(07).
+134200         04  CNTL-HOLIDAY-DESC   PIC X(25).
+134300         04  CNTL-HOLIDAY-FROM   PIC X(4).
+134400         04  CNTL-HOLIDAY-TO     PIC X(4).
+134500         04  CNTL-EXCLUSIVE-HOLIDAYS.
+134600             05 FILLER OCCURS 3 TIMES.
+134700                10 CNTL-XHD-DATE PIC XXXX.
+134800         04  CNTL-20-UPDATE-DATE PIC X(6).
+134900         04  CNTL-20-UPDATE-TIME PIC X(4).
+135000         04  CNTL-20-UPDATE-USERID PIC X(8).
+135100         04  FILLER              PIC X(173).
+135200**
+135300**
+135400**
+135500******************  CNTL-AREA-21 **************************
+135600*
+135700     02  CNTL-AREA-21 REDEFINES CNTL-AREA.
+135800         04  FILLER                 PIC X(02).
+135900         04  CNTL-21-STATUS-CODE    PIC X(01).
+136000         04  FILLER                 PIC X(17).
+136100         04  CNTL-21-LONG-DESC      PIC X(18).
+136200         04  CNTL-21-SHORT-DESC     PIC X(09).
+136300         04  CNTL-21-RSN-INTERFACE-TBL.
+136400             06  CNTL-21-RSN-INTERFACE      OCCURS 30.
+136500                 08  CNTL-21-REASON-CODE    PIC X(02).
+136600         04  FILLER                  PIC X(131).
+136700         04  CNTL-21-LASTUPDATE-USER PIC X(008).
+136800         04  CNTL-21-LASTUPDATE-DATE PIC X(006).
+136900         04  CNTL-21-LASTUPDATE-TIME PIC X(004).
+137000**
+137100******************  CNTL-AREA-22 **************************
+137200*
+137300     02  CNTL-AREA-22 REDEFINES CNTL-AREA.
+137400         04  FILLER                  PIC X(02).
+137500         04  CNTL-22-REASON-CODE     PIC X(02).
+137600         04  FILLER                  PIC X(06).
+137700         04  CNTL-22-EFF-END-DATE-TIME.
+137800             06  CNTL-22-EFF-END-DATE.
+137900             88  CNTL-22-EFF-END-DATE-CURRENT VALUE '999999'.
+138000                 08  CNTL-22-EFF-END-DATE-YY PIC X(02).
+138100                 08  CNTL-22-EFF-END-DATE-MM PIC X(02).
+138200                 08  CNTL-22-EFF-END-DATE-DD PIC X(02).
+138300             06  CNTL-22-EFF-END-TIME.
+138400             88  CNTL-22-EFF-END-TIME-CURRENT VALUE '9999'.
+138500                 08  CNTL-22-EFF-END-TIME-HH PIC X(02).
+138600                 08  CNTL-22-EFF-END-TIME-MN PIC X(02).
+138700         04  FILLER                  PIC X(02).
+138800         04  CNTL-22-LONG-DESC       PIC X(25).
+138900         04  CNTL-22-SHORT-DESC      PIC X(09).
+139000         04  FILLER                  PIC X(182).
+139100         04  CNTL-22-LASTUPDATE-USER PIC X(008).
+139200         04  CNTL-22-LASTUPDATE-DATE PIC X(006).
+139300         04  CNTL-22-LASTUPDATE-TIME PIC X(004).
+139400**
+139500******************  CNTL-AREA-23 **************************
+139600*
+139700     02  CNTL-AREA-23 REDEFINES CNTL-AREA.
+139800         04  FILLER                   PIC X(02).
+139900         04  CNTL-23-STATUS-CODE      PIC X(01).
+140000         04  CNTL-23-REASON-CODE      PIC X(02).
+140100         04  CNTL-23-CC               PIC X(02).
+140200         04  CNTL-23-DIST             PIC X(02).
+140300         04  CNTL-23-SDIST            PIC X(02).
+140400         04  CNTL-23-ASGN-TYPE        PIC X(01).
+140500         04  CNTL-23-ASGN             PIC X(06).
+140600         04  FILLER                   PIC X(02).
+140700         04  CNTL-23-ON-CALL          PIC X(01).
+140800         04  CNTL-23-VRU-IND          PIC X(01).
+140900         04  CNTL-23-HL-AUTH          PIC X(01).
+141000         04  CNTL-23-MIN-OFF-REGULAR  PIC X(04).
+141100         04  CNTL-23-SUPV-INIT        PIC X(01).
+141200         04  CNTL-23-MIN-OFF-ONCALL   PIC X(04).
+141300         04  CNTL-23-DURATION-REQ     PIC X(01).
+141400         04  CNTL-23-SPAWN-KILLER-B   PIC X(01).
+141500         04  CNTL-23-REST-OK          PIC X(01).
+141600         04  CNTL-23-REL-FROM-ASGN    PIC X(01).
+141700         04  CNTL-23-DISP-WO-TRACKING PIC X(01).
+141800         04  CNTL-23-RETAIN-POS-POOL  PIC X(01).
+141900         04  CNTL-23-AUTO-EXEC-TASK   PIC X(01).
+142000         04  CNTL-23-AJ-MU-LEAD-TIME  PIC X(04).
+142100         04  CNTL-23-RTE-STAFF-FORM   PIC X(01).
+142200         04  CNTL-23-NON-ACTIVE-STAT  PIC X(01).
+142300         04  CNTL-23-REFUSE-LAYOFF    PIC X(01).
+142400         04  CNTL-23-AUTO-MU          PIC X(01).
+142500         04  CNTL-23-MU-PLUS-MINUS    PIC X(01).
+142600         04  CNTL-23-MU-TIME          PIC X(04).
+142700         04  CNTL-23-ROT-TO-BOT-MU    PIC X(01).
+142800         04  CNTL-23-CHANGE-TO-STATUS PIC X(02).
+142900         04  CNTL-23-CHANGE-TO-RSN    PIC X(02).
+143000         04  CNTL-23-CHG-AFTER-DAYS   PIC X(03).
+143100         04  CNTL-23-CHG-AFTER-HRMN   PIC X(04).
+143200         04  CNTL-23-MISC-CLM-TYPE    PIC X(01).
+143300             88  CNTL-23-MC-PAID-LEAVE    VALUE 'P'.
+143400             88  CNTL-23-MC-LOST-WORK     VALUE 'L'.
+143500         04  CNTL-23-MISC-CLM-CODE    PIC X(02).
+143600         04  CNTL-23-ASSIGNED-FLAG    PIC X(01).
+143700             88  CNTL-23-ASGND-DAY-GUAR   VALUE 'Y',
+143800                                                'G'.
+143900             88  CNTL-23-ASGND-DAY-INCUM  VALUE 'Y',
+144000                                                'I'.
+144100         04  CNTL-23-BEFORE-ONLY      PIC X(01).
+144200             88  CNTL-23-ASGND-B4-ONLY    VALUE 'B'.
+144300         04  CNTL-23-UNAVAIL-VAC      PIC X(01).
+144400         04  CNTL-23-COUNT-PERSONAL   PIC X(01).
+144500         04  CNTL-23-DEACT-BIDS-CD    PIC X(01).
+144600         04  CNTL-23-AVAIL-HOL-PAY    PIC X(01).
+144700         04  CNTL-23-EXEC-PLD-BO      PIC X(01).
+144800         04  CNTL-23-IVR-NOTIFY       PIC X(01).
+144900         04  CNTL-23-COUNTS-HOS-SRVC  PIC X(01).
+145000         04  CNTL-23-IVR-EARLY-BO-FL  PIC X(01).
+145100             88  CNTL-23-IVR-EARLY-BO-ALLOWED     VALUE 'Y'.
+145200         04  CNTL-23-IVR-LATE-BO-FL   PIC X(01).
+145300             88  CNTL-23-IVR-LATE-BO-ALLOWED      VALUE 'Y'.
+145400         04  CNTL-23-IVR-LATE-BO-TIME PIC X(04).
+145500         04  CNTL-23-IVR-LATE-BO-STAT PIC X(01).
+145600         04  CNTL-23-IVR-LATE-BO-RSN  PIC X(02).
+145700         04  CNTL-23-ALLOW-VCNY       PIC X(01).
+145800         04  CNTL-23-SHOW-RSN-ON-SCR-FL PIC X(01).
+145900             88  CNTL-23-SHOW-RSN-ON-SCR-YES      VALUE 'Y'.
+146000             88  CNTL-23-SHOW-RSN-ON-SCR-NO       VALUE 'N' ' '.
+146100         04  CNTL-23-RESET-TIMEOFF-FL PIC X(01).
+146200             88  CNTL-23-RESET-TIMEOFF-NO         VALUE 'N' ' '.
+146300             88  CNTL-23-RESET-TIMEOFF-YES        VALUE 'Y'.
+146400         04  CNTL-23-RESET-TO-HRMN    PIC X(04).
+146500         04  CNTL-23-SB-RESET-ST-FL   PIC X(01).
+146600             88  CNTL-23-SB-RESET-STARTS          VALUE 'Y'.
+146700             88  CNTL-23-SB-RESET-STARTS-NO       VALUE 'N' ' '.
+146800         04  CNTL-23-MASK-FLD-SCR-FL  PIC X(01).
+146900             88  CNTL-23-MASK-FLD-SCR-YES         VALUE 'Y'.
+147000             88  CNTL-23-MASK-HOLD-TURN           VALUE 'H'.
+147100         04  FILLER                   PIC X(144).
+147200***      04  FILLER                   PIC X(145).
+147300*
+147400         04  CNTL-23-LASTUPDATE-USER  PIC X(08).
+147500         04  CNTL-23-LASTUPDATE-DATE  PIC X(06).
+147600         04  CNTL-23-LASTUPDATE-TIME  PIC X(04).
+147700*
+147800**
+147900******************  CNTL-AREA-29 **************************
+148000*
+148100     02  CNTL-AREA-29 REDEFINES CNTL-AREA.
+148200         04  FILLER                  PIC X(2).
+148300         04  CNTL-VRU-BOARD-CODE.
+148400             05  CNTL-VRU-BOARD-CODE-DIST PIC X(2).
+148500             05  CNTL-VRU-BOARD-CODE-SUB-DIST PIC X(2).
+148600             05  CNTL-VRU-BOARD-CODE-TYPE PIC X(2).
+148700         04  FILLER                  PIC X(12).
+148800         04  CNTL-VRU-CRAFT-CODE     PIC X(2).
+148900         04  CNTL-VRU-POSITIONS      PIC X(2).
+149000         04  CNTL-VRU-BOARD-ARRAY OCCURS 10 TIMES.
+149100             05  CNTL-VRU-BOARD-TYPE     PIC X(1).
+149200                 88  CNTL-VRU-POOL       VALUE 'U'.
+149300                 88  CNTL-VRU-EXTRABOARD VALUE 'X'.
+149400             05  CNTL-VRU-DIVN           PIC X(2).
+149500             05  CNTL-VRU-SUB-DIST       PIC X(2).
+149600             05  CNTL-VRU-CODE           PIC X(2).
+149700             05  CNTL-VRU-TERM           PIC X(1).
+149800         04  CNTL-VRU-FAST-SLOW-ARRAY OCCURS 10 TIMES.
+149900             05  CNTL-VRU-FAST-SLOW      PIC X(1).
+150000                 88  CNTL-VRU-FAST-BOARD VALUE ' ',
+150100                                               'F'.
+150200                 88  CNTL-VRU-SLOW-BOARD VALUE 'S'.
+150300         04  FILLER                  PIC X(124).
+150400         04  CNTL-LASTUPDATE-DATE    PIC X(6).
+150500         04  CNTL-LASTUPDATE-TIME    PIC X(4).
+150600         04  CNTL-LASTUPDATE-USER    PIC X(8).
+150700**
+150800******************  CNTL-AREA-30 **************************
+150900*
+151000     02  CNTL-AREA-30 REDEFINES CNTL-AREA.
+151100         04  FILLER                PIC X(6).
+151200         04  CNTL-EQUITY-CRAFT     PIC XX.
+151300         04  CNTL-EQUITY-SEQ       PIC 9(3).
+151400             88  CNTL-EQUITY-STATS     VALUE ZEROES.
+151500         04  FILLER                PIC X(9).
+151600         04  CNTL-EQUITY-P-CODE    PIC XX.
+151700         04  CNTL-EQUITY-CNP-NBR   PIC 9(3).
+151800         04  CNTL-EQUITY-LAST-NBR  PIC 9(3).
+151900         04  FILLER                PIC X(228).
+152000*
+152100******************  CNTL-AREA-36 **************************
+152200*
+152300     02  CNTL-AREA-36 REDEFINES CNTL-AREA.
+152400         04  FILLER                  PIC X(2).
+152500         04  CNTL-TASK-LIST-USERID   PIC X(8).
+152600         04  FILLER                  PIC X(10).
+152700         04  CNTL-TASK-LIST-ARRAY OCCURS 10 TIMES.
+152800             06  CNTL-TASK-DIST      PIC X(2).
+152900             06  CNTL-TASK-SUB-DIST  PIC X(2).
+153000         04  CNTL-TASK-WINDOW        PIC X(4).
+153100         04  CNTL-TASK-LIST-ARRAY2 OCCURS 4 TIMES.
+153200             06  CNTL-TASK-DIST2     PIC X(2).
+153300             06  CNTL-TASK-SUB-DIST2 PIC X(2).
+153400         04  CNTL-UPDATE-DATE-36     PIC X(06).
+153500         04  CNTL-UPDATE-TIME-36     PIC X(04).
+153600         04  CNTL-UPDATE-USERID-36   PIC X(08).
+153700         04  FILLER                  PIC X(158).
+153800**
+153900******************  CNTL-AREA-37 **************************
+154000*
+154100     02  CNTL-AREA-37 REDEFINES CNTL-AREA.
+154200         04  FILLER                            PIC X(006).
+154300         04  CNTL-37-EXP-DATE                  PIC X(006).
+154400         04  CNTL-37-DAY                       PIC X(003).
+154500         04  CNTL-37-DAY-NUM REDEFINES
+154600             CNTL-37-DAY                       PIC 9(003).
+154700             88  CNTL-37-STATS                     VALUE ZERO.
+154800         04  CNTL-37-TIME-TO                   PIC X(004).
+154900         04  FILLER                            PIC X(001).
+155000         04  CNTL-37-VARIABLE-AREA             PIC X(236).
+155100         04  CNTL-37-STATS-AREA REDEFINES
+155200             CNTL-37-VARIABLE-AREA.
+155300             05  CNTL-37-STATS-AREA.
+155400                 06  CNTL-37-START-DATE.
+155500                     07  CNTL-37-START-YR      PIC X(002).
+155600                     07  CNTL-37-START-MO      PIC X(002).
+155700                     07  CNTL-37-START-DY      PIC X(002).
+155800                 06  CNTL-37-CYCLE-DATE.
+155900                     07  CNTL-37-CYCLE-YR      PIC X(002).
+156000                     07  CNTL-37-CYCLE-MO      PIC X(002).
+156100                     07  CNTL-37-CYCLE-DY      PIC X(002).
+156200                 06  CNTL-37-CYCLE             PIC X(003).
+156300                 06  CNTL-37-CYCLE-NUM REDEFINES
+156400                     CNTL-37-CYCLE             PIC 9(003).
+156500                 06  FILLER                    PIC X(203).
+156600                 06  CNTL-37-UPDATE-DATE       PIC X(06).
+156700                 06  CNTL-37-UPDATE-TIME       PIC X(04).
+156800                 06  CNTL-37-UPDATE-USER       PIC X(08).
+156900         04  CNTL-37-DETAIL-AREA REDEFINES
+157000             CNTL-37-VARIABLE-AREA.
+157100             05  CNTL-37-TIME-FROM             PIC X(004).
+157200             05  FILLER                        PIC X(004).
+157300             05  CNTL-37-XB-ID                 PIC X(002).
+157400                 88  CNTL-37-RESTDAY               VALUE 'RD'.
+157500             05  FILLER                        PIC X(226).
+157600**
+157700******************  CNTL-AREA-40 **************************
+157800*
+157900     02  CNTL-AREA-40 REDEFINES CNTL-AREA.
+158000         04  FILLER                            PIC X(002).
+158100         04  CNTL-DIST-40                      PIC X(002).
+158200         04  CNTL-SUB-DIST-40                  PIC X(002).
+158300         04  CNTL-CRAFT-40                     PIC X(002).
+158400         04  CNTL-PERM-TEMP-40                 PIC X(001).
+158500             88  CNTL-PERM-40                      VALUE 'P'.
+158600             88  CNTL-TEMP-40                      VALUE 'T'.
+158700         04  CNTL-SEQ-40                       PIC X(002).
+158800             88  CNTL-BASE-SEQ-40                  VALUE '01'.
+158900             88  CNTL-DATE-SEQ-40                  VALUE '02'.
+159000         04  FILLER                            PIC X(009).
+159100         04  CNTL-VARIABLE-AREA-40.
+159200             06  CNTL-DESC-40                  PIC X(025).
+159300             06  CNTL-746-AREA-40              PIC X(001).
+159400             06  CNTL-LOCK-40                  PIC X(001).
+159500             06  CNTL-LOCK-DAYS-40             PIC X(002).
+159600             06  CNTL-INCL-LOCAL-ARRAY-40.
+159700                 08  CNTL-INCL-LOCAL-40      OCCURS 10 TIMES.
+159800                     10  CNTL-INCL-DIST-40     PIC X(002).
+159900                     10  CNTL-INCL-SUB-DIST-40 PIC X(002).
+160000             06  CNTL-INCL-REG-T3-ARRAY-40.
+160100                 08  CNTL-INCL-REG-T3-40     OCCURS 10 TIMES.
+160200                     10  CNTL-REG-T3-DIST-40      PIC X(002).
+160300                     10  CNTL-REG-T3-SUB-DIST-40  PIC X(002).
+160400             06  CNTL-INCL-REG-T1-ARRAY-40.
+160500                 08  CNTL-INCL-REG-T1-40     OCCURS 10 TIMES.
+160600                     10  CNTL-REG-T1-DIST-40      PIC X(002).
+160700                     10  CNTL-REG-T1-SUB-DIST-40  PIC X(002).
+160800             06  CNTL-UPDATE-DATE-40              PIC X(06).
+160900             06  CNTL-UPDATE-TIME-40              PIC X(04).
+161000             06  CNTL-UPDATE-USER-40              PIC X(08).
+161100             06  FILLER                        PIC X(69).
+161200         04  FILLER REDEFINES CNTL-VARIABLE-AREA-40.
+161300             06  CNTL-DATE-TIME-ARRAY-40.
+161400                 08 CNTL-DATE-TIME-AREA-40   OCCURS  4 TIMES.
+161500                    10 CNTL-CC-DATE-TIME-40.
+161600                       12 CNTL-CC-DATE-40      PIC X(006).
+161700                       12 CNTL-CC-TIME-40      PIC X(004).
+161800                    10 CNTL-CC-EFF-DATE-TIME-40.
+161900                       12 CNTL-CC-EFF-DATE-40  PIC X(006).
+162000                       12 CNTL-CC-EFF-TIME-40  PIC X(004).
+162100                    10 CNTL-746-DATE-TIME-40.
+162200                       12 CNTL-746-DATE-40     PIC X(006).
+162300                       12 CNTL-746-TIME-40     PIC X(004).
+162400                    10 CNTL-746-EFF-DATE-TIME-40.
+162500                       12 CNTL-746-EFF-DATE-40 PIC X(006).
+162600                       12 CNTL-746-EFF-TIME-40 PIC X(004).
+162700             06  FILLER                        PIC X(076).
+162800**
+162900******************  CNTL-AREA-41 **************************
+163000*
+163100     02  CNTL-AREA-41 REDEFINES CNTL-AREA.
+163200         04  FILLER                            PIC X(002).
+163300         04  CNTL-DIST-41                      PIC X(002).
+163400         04  CNTL-SUB-DIST-41                  PIC X(002).
+163500         04  CNTL-TYPE-41                      PIC X(001).
+163600         04  CNTL-PROFILE-41                   PIC X(008).
+163700         04  CNTL-SEQ-41                       PIC X(002).
+163800             88 CNTL-BASE-SEQ-41             VALUE '00'.
+163900             88 CNTL-DESC-SEQ-41             VALUE '01' THRU '99'.
+164000         04  FILLER REDEFINES CNTL-SEQ-41.
+164100             06  CNTL-SEQ-NUM-41               PIC 9(002).
+164200         04  FILLER                            PIC X(003).
+164300         04  CNTL-VARIABLE-AREA-41.
+164400             06  CNTL-DESC-41                  PIC X(020).
+164500             06  CNTL-ASGNMT-41                PIC X(006).
+164600             06  FILLER                        PIC X(022).
+164700             06  CNTL-TURN-ARRAY-41.
+164800                 08  CNTL-TURN-41            OCCURS 32 TIMES
+164900                                               PIC X(004).
+165000             06  FILLER                        PIC X(042).
+165100         04  FILLER REDEFINES CNTL-VARIABLE-AREA-41.
+165200             06  CNTL-ASGNMT-DESC-ARRAY-41.
+165300                 08  CNTL-ASGNMT-DESC-41     OCCURS  3 TIMES
+165400                                               PIC X(070).
+165500             06  FILLER                        PIC X(008).
+165600         04  CNTL-UPDATE-DATE-41               PIC X(06).
+165700         04  CNTL-UPDATE-TIME-41               PIC X(04).
+165800         04  CNTL-UPDATE-USERID-41             PIC X(08).
+165900**
+166000******************  CNTL-AREA-42 **************************
+166100*
+166200     02  CNTL-AREA-42 REDEFINES CNTL-AREA.
+166300         04  FILLER                            PIC X(002).
+166400         04  CNTL-DIST-42                      PIC X(002).
+166500         04  CNTL-SUB-DIST-42                  PIC X(002).
+166600         04  CNTL-CRAFT-42                     PIC X(002).
+166700         04  CNTL-YD-RD-42                     PIC X(001).
+166800         04  CNTL-TYPE-42                      PIC X(001).
+166900         04  FILLER                            PIC X(010).
+167000         04  CNTL-AWARD-RULE-ARRAY-42.
+167100             06  CNTL-AWARD-RULE-42          OCCURS 60 TIMES
+167200                                               PIC X(001).
+167300                 88 CNTL-USE-AWARD-ASGNMT-42            VALUE '1'.
+167400                 88 CNTL-USE-OS-TIME-42                 VALUE '2'.
+167500                 88 CNTL-USE-OFF-DUTY-42                VALUE '3'.
+167600                 88 CNTL-USE-STATUS-42                  VALUE '4'.
+167700                 88 CNTL-USE-CIRC-EFF-TIME-42           VALUE '5'.
+167800                 88 CNTL-USE-ORIG-POSITION-42           VALUE '6'.
+167900                 88 CNTL-USE-FIRST-OUT-42               VALUE '7'.
+168000                 88 CNTL-USE-OLD-TURN-TU-HOME-42        VALUE '8'.
+168100         04  CNTL-TIE-BREAKER-42               PIC X(001).
+168200             88 CNTL-USE-SENIORITY-42                   VALUE 'S'.
+168300             88 CNTL-USE-LAST-ORDER-42                  VALUE 'O'.
+168400         04  CNTL-EXCESSIVE-REST-42            PIC X(001).
+168500             88  CNTL-EXCESSIVE-REST-APPLIES            VALUE 'Y'.
+168600         04  CNTL-MISSED-CALL-42               PIC X(001).
+168700             88  CNTL-MISSED-CALL-APPLIES               VALUE 'Y'.
+168800         04  CNTL-UPDATE-DATE-42               PIC X(06).
+168900         04  CNTL-UPDATE-TIME-42               PIC X(04).
+169000         04  CNTL-UPDATE-USER-42               PIC X(08).
+169100         04  FILLER                            PIC X(155).
+169200**
+169300******************  CNTL-AREA-43 **************************
+169400*
+169500     02  CNTL-AREA-43 REDEFINES CNTL-AREA.
+169600         04  FILLER                     PIC X(002).
+169700         04  CNTL-VAC-ROSTER            PIC X(008).
+169800         04  FILLER                     PIC X(010).
+169900         04  CNTL-VAC-DESCRIPTION       PIC X(050).
+170000         04  CNTL-VAC-PROFILE           PIC X(008).
+170100         04  CNTL-VAC-AUTH-USER-AREA OCCURS 6 TIMES.
+170200             06  CNTL-VAC-AUTH-USER     PIC X(008).
+170300         04  CNTL-VAC-SEN-ROSTER-AREA OCCURS 5 TIMES.
+170400             06  CNTL-VAC-SEN-ROSTER    PIC X(004).
+170500             06  CNTL-VAC-SEN-ROSTER-CC PIC X(002).
+170600         04  CNTL-VAC-BID-FLAG          PIC X.
+170700             88  CNTL-VAC-NO-BIDS            VALUE '0'.
+170800             88  CNTL-VAC-HAS-BIDS           VALUE '1'.
+170900         04  FILLER                     PIC X(099).
+171000**
+171100******************  CNTL-AREA-52 **************************
+171200*
+171300     02  CNTL-AREA-52 REDEFINES CNTL-AREA.
+171400         04  FILLER                PIC X(6).
+171500         04  CNTL-SHIFT-P-T-OR-S   PIC X.
+171600             88  CNTL-52-ASGN-JOB       VALUE 'A'.
+171700             88  CNTL-52-OFF-BOARD      VALUE 'B'.
+171800             88  CNTL-52-DEMOTED-CO     VALUE 'C'.
+171900             88  CNTL-52-DEMOTED-EN     VALUE 'E'.
+172000             88  CNTL-52-TASK-LIST      VALUE 'L'.
+172100             88  CNTL-52-TURNOVER-TABLE VALUE 'O'.
+172200             88  CNTL-52-POOL-TABLE     VALUE 'P'.
+172300             88  CNTL-52-TRAIN-EN-TABLE VALUE 'T'.
+172400             88  CNTL-52-UNUSUAL-TABLE  VALUE 'U'.
+172500             88  CNTL-52-SPARE-BOARD    VALUE 'X'.
+172600*01K-98-REC-BEG
+172700*        04  CNTL-SHIFT-RPT-SEQ    PIC 99.
+172800*        04  FILLER                PIC X(11).
+172900         04  CNTL-SHIFT-RPT-SEQ    PIC 9999.
+173000         04  FILLER                PIC X(09).
+173100*01K-98-REC-END
+173200         04  CNTL-SHIFT-AREA.
+173300             06  CNTL-SHIFT-DIST      PIC XX.
+173400             06  CNTL-SHIFT-SUB-DIST  PIC XX.
+173500             06  CNTL-SHIFT-POOL      PIC XX.
+173600             06  CNTL-SHIFT-I-O       PIC X.
+173700             06  CNTL-SHIFT-CREW      PIC XX.
+173800             06  CNTL-SHIFT-TRAIN     PIC X(3).
+173900             06  CNTL-TASK-TIME       PIC XX.
+174000         04  CNTL-52-UPDATE-DATE      PIC X(06).
+174100         04  CNTL-52-UPDATE-TIME      PIC X(04).
+174200         04  CNTL-52-UPDATE-USER      PIC X(08).
+174300         04  FILLER                   PIC X(204).
+174400**
+174500******************  CNTL-AREA-53 **************************
+174600*
+174700     02  CNTL-AREA-53 REDEFINES CNTL-AREA.
+174800         04  FILLER                   PIC X(2).
+174900         04  CNTL-VRU-MSG-CODE        PIC X(2).
+175000         04  FILLER                   PIC X(16).
+175100         04  CNTL-VRU-MSG-TEXT        PIC X(30).
+175200         04  FILLER                   PIC X(206).
+175300**
+175400******************  CNTL-AREA-54 **************************
+175500     02  CNTL-AREA-54 REDEFINES CNTL-AREA.
+175600         04  FILLER                    PIC X(02).
+175700         04  CNTL-IVR-CALL-PROF        PIC X(08).
+175800         04  FILLER                    PIC X(10).
+175900         04  CNTL-IVR-CALL-ACTIVE-FL   PIC X(01).
+176000             88  CNTL-IVR-CALL-ACTIVE          VALUE 'Y'.
+176100             88  CNTL-IVR-CALL-NOT-ACTIVE      VALUE 'N'.
+176200         04  CNTL-IVR-CALL-LEAD-TM     PIC X(02).
+176300         04  CNTL-IVR-CALL-WAIT-EXP    PIC X(02).
+176400         04  CNTL-IVR-PROXY-MSG-FL     PIC X(01).
+176500             88  CNTL-IVR-ACCEPT-MSG-YES       VALUE 'Y'.
+176600             88  CNTL-IVR-ACCEPT-MSG-NO        VALUE 'N'.
+176700         04  CNTL-IVR-USER-AUTH-REQ-FL PIC X(01).
+176800             88  CNTL-IVR-USER-AUTH-REQ        VALUE 'Y'.
+176900             88  CNTL-IVR-USER-AUTH-NOT-REQ    VALUE 'N'.
+177000         04  CNTL-IVR-CALL-CMPLT-FL    PIC X(01).
+177100             88  CNTL-IVR-CALL-COMPLETE        VALUE 'Y'.
+177200             88  CNTL-IVR-CALL-NOT-COMPLETE    VALUE 'N'.
+177300         04  CNTL-IVR-CALL-DUR         PIC X(02).
+177400         04  CNTL-IVR-NBR-CYCLES       PIC X(01).
+177500         04  CNTL-IVR-CYCLE-GAP        PIC X(02).
+177600         04  CNTL-IVR-PASS-CLBCK       PIC X(02).
+177700         04  CNTL-IVR-SHORT-CALL-DUR   PIC X(02).
+177800         04  CNTL-IVR-SHORT-NBR-CYC    PIC X(01).
+177900         04  CNTL-IVR-SHORT-CYC-GAP    PIC X(02).
+178000         04  CNTL-IVR-SHORT-PASS-CLBK  PIC X(02).
+178100         04  CNTL-IVR-RESUB-CALL-DUR   PIC X(02).
+178200         04  CNTL-IVR-RESUB-NBR-CYC    PIC X(01).
+178300         04  CNTL-IVR-RESUB-CYC-GAP    PIC X(02).
+178400         04  CNTL-IVR-WAKE-CALL-DUR    PIC X(02).
+178500         04  CNTL-IVR-WAKE-NBR-CYC     PIC X(01).
+178600         04  CNTL-IVR-WAKE-CYC-GAP     PIC X(02).
+178700         04  CNTL-IVR-GRACE-PERIOD     PIC X(02).
+178800         04  CNTL-IVR-SHORT-GRACE-PER  PIC X(02).
+178900*CNC0509-BEG
+179000         04  CNTL-AWAY-NBR-WO-TEMP     PIC X(01).
+179100             88 CNTL-AWAY-NBR-WO-TEMP-AVAIL    VALUE 'Y'.
+179200             88 CNTL-AWAY-NBR-WO-TEMP-NO-AVAIL VALUE 'N'.
+179300         04  CNTL-AWAY-NBR-W-TEMP      PIC X(01).
+179400             88 CNTL-AWAY-NBR-W-TEMP-AVAIL     VALUE 'Y'.
+179500             88 CNTL-AWAY-NBR-W-TEMP-NO-AVAIL  VALUE 'N'.
+179600*CNC0509-END
+179700         04  FILLER                    PIC X(180).
+179800         04  CNTL-54-LASTUPDATE-DATE   PIC X(06).
+179900         04  CNTL-54-LASTUPDATE-TIME   PIC X(04).
+180000         04  CNTL-54-LASTUPDATE-USER   PIC X(08).
+180100**
+180200******************  CNTL-AREA-59 **************************
+180300*
+180400     02  CNTL-AREA-59 REDEFINES CNTL-AREA.
+180500         04  FILLER                PIC XX.
+180600         04  CNTL-SET-DIST         PIC XX.
+180700         04  CNTL-SET-SUB-DIST     PIC XX.
+180800         04  FILLER                PIC X(14).
+180900         04  CNTL-SET-ROLL-DATE    PIC X(6).
+181000         04  CNTL-SET-DEL-DATE     PIC X(6).
+181100         04  FILLER                PIC X(224).
+181200**
+181300******************  CNTL-AREA-60 **************************
+181400*
+181500     02  CNTL-AREA-60 REDEFINES CNTL-AREA.
+181600         04  FILLER                   PIC XX.
+181700         04  CNTL-MARKUP-DIST         PIC XX.
+181800         04  CNTL-MARKUP-SUB-DIST     PIC XX.
+181900         04  FILLER                   PIC X(14).
+182000             88  MARKUP-LOCKUP            VALUE '60MARKUPLOCKUP'.
+182100         04  FILLER                   PIC X(236).
+182200**
+182300******************  CNTL-AREA-69 **************************
+182400*
+182500     02  CNTL-AREA-69 REDEFINES CNTL-AREA.
+182600         04  FILLER                PIC X(002).
+182700         04  CNTL-MC-CODE          PIC X(004).
+182800         04  CNTL-MC-TYPE-SVC      PIC X(002).
+182900         04  CNTL-MC-DIST          PIC X(002).
+183000         04  CNTL-MC-SDIST         PIC X(002).
+183100         04  CNTL-MC-XB            PIC X(002).
+183200         04  CNTL-MC-CONS          PIC X(002).
+183300         04  FILLER                PIC X(004).
+183400         04  CNTL-MC-P-OPTION      PIC X(001).
+183500             88  CNTL-MC-RETAIN-POSITION  VALUE '1'.
+183600             88  CNTL-MC-OFF-BOARD        VALUE '2'.
+183700         04  CNTL-MC-U-OPTION      PIC X(001).
+183800         04  CNTL-MC-ECC-CODE      PIC X(002).
+183900         04  CNTL-MC-HOURS.
+184000             06  CNTL-MC-HH        PIC X(002).
+184100             06  CNTL-MC-MM        PIC X(002).
+184200         04  CNTL-MC-T-OPTION      PIC X(001).
+184300         04  CNTL-MC-ADD-ST-FLAG   PIC X(001).
+184400             88  CNTL-MC-ADD-START        VALUE '1'.
+184500             88  CNTL-MC-RESET-START      VALUE '2'.
+184600         04  CNTL-MC-OPP-BD-FLAG   PIC X(001).
+184700             88  CNTL-MC-APPLY-TO-OPP-BD  VALUE 'Y'.
+184800         04  CNTL-MC-UPDATE-DATE       PIC X(06).
+184900         04  CNTL-MC-UPDATE-TIME       PIC X(04).
+185000         04  CNTL-MC-UPDATE-USERID     PIC X(08).
+185100         04  FILLER                PIC X(207).
+185200**
+185300******************  CNTL-AREA-70 **************************
+185400*
+185500     02  CNTL-AREA-70 REDEFINES CNTL-AREA.
+185600         04  FILLER                       PIC X(6).
+185700         04  CNTL-AVAIL-SERV              PIC XX.
+185800         04  FILLER                       PIC X(12).
+185900         04  CNTL-AVAIL-INFO.
+186000             06  CNTL-AVAIL-CALL          PIC X.
+186100             06  CNTL-AVAIL-REJECT        PIC X.
+186200             06  CNTL-AVAIL-MISS-CALL     PIC X.
+186300             06  CNTL-AVAIL-UNAVAIL       PIC X.
+186400             06  CNTL-AVAIL-LAYOFF        PIC X.
+186500             06  FILLER                   PIC X(10).
+186600         04  CNTL-AVAIL-INFO-ARRAY REDEFINES CNTL-AVAIL-INFO.
+186700             06  CNTL-AVAIL-ARRAY OCCURS 15 TIMES.
+186800               08  CNTL-AVAIL-CODE        PIC X.
+186900                   88  CNTL-AVAIL-BOTTOM      VALUE '1'.
+187000                   88  CNTL-AVAIL-REMOVE      VALUE '2'.
+187100                   88  CNTL-AVAIL-RETAIN      VALUE '3'.
+187200         04  CNTL-AVAIL-STATUS-ARRAY OCCURS 7 TIMES.
+187300             06  CNTL-AVAIL-RETAIN-STATUS PIC X.
+187400                 88  CNTL-AVAIL-RETAIN-ALL    VALUE '*'.
+187500         04  CNTL-AVAIL-PLACEMENT         PIC X.
+187600             88  CNTL-AVAIL-PLACE-BOOK-ON     VALUE '1'.
+187700             88  CNTL-AVAIL-PLACE-HRS-FROM    VALUE '2'.
+187800         04  CNTL-AVAIL-PLACE-HOURS       PIC XX.
+187900         04  CNTL-AVAIL-PLACE-HOURS-NUM REDEFINES
+188000             CNTL-AVAIL-PLACE-HOURS       PIC 99.
+188100         04  CNTL-AVAIL-PLACE-FROM        PIC X.
+188200             88  CNTL-AVAIL-PLACE-ON-DUTY     VALUE '1'.
+188300             88  CNTL-AVAIL-PLACE-ACTION      VALUE '2'.
+188400             88  CNTL-AVAIL-PLACE-APPLICATION VALUE '3'.
+188500         04  CNTL-AVAIL-REQ-TIME          PIC X(4).
+188600         04  CNTL-70-UPDATE-DATE          PIC X(06).
+188700         04  CNTL-70-UPDATE-TIME          PIC X(04).
+188800         04  CNTL-70-UPDATE-USER          PIC X(08).
+188900         04  FILLER                       PIC X(188).
+189000**
+189100******************  CNTL-AREA-71 **************************
+189200*
+189300     02  CNTL-AREA-71 REDEFINES CNTL-AREA.
+189400         04  CNTL-PLD-REC-TYPE         PIC X(2).
+189500         04  CNTL-PLD-DIST             PIC X(2).
+189600         04  CNTL-PLD-SUB-DIST         PIC X(2).
+189700         04  CNTL-PLD-BLE-UTU          PIC X(3).
+189800         04  CNTL-PLD-DATE-EMPL-BEFORE PIC 9(8).
+189900         04  CNTL-PLD-YRS-SERVICE      PIC 9(2).
+190000         04  FILLER                    PIC X(1).
+190100         04  CNTL-PLD-ROAD-DAYS        PIC 9(2).
+190200         04  CNTL-PLD-YARD-DAYS        PIC 9(2).
+190300         04  CNTL-PLD-CARRY-OVER-FLAG  PIC X(1).
+190400             88  CNTL-PLD-CARRY-OVER       VALUE 'Y'.
+190500         04  FILLER                    PIC X(231).
+190600**
+190700******************  CNTL-F SYSTEM**************************
+190800** THIS RECORD ALONG WITH WITH CNTL-AREA-73 PROVIDES FOR
+190900** ALL THE AVAILABILITY LIST CONTROL DATA
+191000*
+191100     02  CNTL-AREA-72 REDEFINES CNTL-AREA.
+191200         04  FILLER                                 PIC X(06).
+191300         04  CNTL-AVL-ID                            PIC X(02).
+191400         04  FILLER                                 PIC X(12).
+191500         04  CNTL-AVL-DESCRIPTION                   PIC X(40).
+191600         04  CNTL-AVL-REJECT-FUNC-ARRAY OCCURS 2 TIMES.
+191700             06  CNTL-AVL-REJECT-FUNC               PIC X(04).
+191800         04  CNTL-AVL-REJECT-ARRAY OCCURS 3 TIMES.
+191900             06  CNTL-AVL-REJECT-ACT-CD             PIC X(01).
+192000             06  CNTL-AVL-REJECT-TM-CD              PIC X(01).
+192100             06  CNTL-AVL-REJECT-PEN-DAYS.
+192200                 08  CNTL-AVL-REJECT-PEN-DAYS-N     PIC 9(02).
+192300         04  CNTL-AVL-REJECT-OTH-ARRAY OCCURS 3 TIMES.
+192400             06  CNTL-AVL-REJECT-OTH-ACT-CD         PIC X(01).
+192500             06  CNTL-AVL-REJECT-OTH-TM-CD          PIC X(01).
+192600             06  CNTL-AVL-REJECT-OTH-PEN-DAYS.
+192700                 08  CNTL-AVL-REJECT-OTH-PEN-DAYS-N PIC 9(02).
+192800         04  CNTL-AVL-MISSC-FUNC-ARRAY OCCURS 2 TIMES.
+192900             06  CNTL-AVL-MISSC-FUNC                PIC X(04).
+193000         04  CNTL-AVL-MISSC-ARRAY OCCURS 3 TIMES.
+193100             06  CNTL-AVL-MISSC-ACT-CD              PIC X(01).
+193200             06  CNTL-AVL-MISSC-TM-CD               PIC X(01).
+193300             06  CNTL-AVL-MISSC-PEN-DAYS.
+193400                 08  CNTL-AVL-MISSC-PEN-DAYS-N      PIC 9(02).
+193500         04  CNTL-AVL-MISSC-OTH-ARRAY OCCURS 3 TIMES.
+193600             06  CNTL-AVL-MISSC-OTH-ACT-CD          PIC X(01).
+193700             06  CNTL-AVL-MISSC-OTH-TM-CD           PIC X(01).
+193800             06  CNTL-AVL-MISSC-OTH-PEN-DAYS.
+193900                 08  CNTL-AVL-MISSC-OTH-PEN-DAYS-N  PIC 9(02).
+194000         04  CNTL-AVL-CALL-CAN.
+194100             06  CNTL-AVL-CALL-CAN-ACT-CD           PIC X(01).
+194200             06  CNTL-AVL-CALL-CAN-TM-CD            PIC X(01).
+194300             06  CNTL-AVL-CALL-CAN-PEN-DAYS.
+194400                 08  CNTL-AVL-CALL-CAN-PEN-DAYS-N   PIC 9(02).
+194500         04  CNTL-AVL-TIEUP.
+194600             06  CNTL-AVL-TIEUP-ACT-CD              PIC X(01).
+194700             06  CNTL-AVL-TIEUP-TM-CD               PIC X(01).
+194800             06  CNTL-AVL-TIEUP-PEN-DAYS.
+194900                 08  CNTL-AVL-TIEUP-PEN-DAYS-N      PIC 9(02).
+195000         04  CNTL-AVL-ST-CHG1-CD-ARRAY  OCCURS 5 TIMES.
+195100             06  CNTL-AVL-ST-CHG1-CD                PIC X(01).
+195200         04  CNTL-AVL-ST-CHG1-ARRAY     OCCURS 3 TIMES.
+195300             06  CNTL-AVL-ST-CHG1-ACT-CD            PIC X(01).
+195400             06  CNTL-AVL-ST-CHG1-TM-CD             PIC X(01).
+195500             06  CNTL-AVL-ST-CHG1-PEN-DAYS.
+195600                 08  CNTL-AVL-ST-CHG1-PEN-DAYS-N    PIC 9(02).
+195700         04  CNTL-AVL-ST-CHG2-CD-ARRAY  OCCURS 5 TIMES.
+195800             06  CNTL-AVL-ST-CHG2-CD                PIC X(01).
+195900         04  CNTL-AVL-ST-CHG2-ARRAY     OCCURS 3 TIMES.
+196000             06  CNTL-AVL-ST-CHG2-ACT-CD            PIC X(01).
+196100             06  CNTL-AVL-ST-CHG2-TM-CD             PIC X(01).
+196200             06  CNTL-AVL-ST-CHG2-PEN-DAYS.
+196300                 08  CNTL-AVL-ST-CHG2-PEN-DAYS-N    PIC 9(02).
+196400         04  CNTL-AVL-ST-CHG-OTH-ARRAY  OCCURS 3 TIMES.
+196500             06  CNTL-AVL-ST-CHG-OTH-ACT-CD         PIC X(01).
+196600             06  CNTL-AVL-ST-CHG-OTH-TM-CD          PIC X(01).
+196700             06  CNTL-AVL-ST-CHG-OTH-PEN-DAYS.
+196800                 08  CNTL-AVL-ST-CHG-OTH-PEN-DAYS-N PIC 9(02).
+196900         04  CNTL-AVL-UNAVL1-CD-ARRAY   OCCURS 5 TIMES.
+197000             06  CNTL-AVL-UNAVL1-CD                 PIC X(01).
+197100         04  CNTL-AVL-UNAVL1-ARRAY      OCCURS 3 TIMES.
+197200             06  CNTL-AVL-UNAVL1-ACT-CD             PIC X(01).
+197300             06  CNTL-AVL-UNAVL1-TM-CD              PIC X(01).
+197400             06  CNTL-AVL-UNAVL1-PEN-DAYS.
+197500                 08  CNTL-AVL-UNAVL1-PEN-DAYS-N     PIC 9(02).
+197600         04  CNTL-AVL-UNAVL2-CD-ARRAY   OCCURS 5 TIMES.
+197700             06  CNTL-AVL-UNAVL2-CD                 PIC X(01).
+197800         04  CNTL-AVL-UNAVL2-ARRAY      OCCURS 3 TIMES.
+197900             06  CNTL-AVL-UNAVL2-ACT-CD             PIC X(01).
+198000             06  CNTL-AVL-UNAVL2-TM-CD              PIC X(01).
+198100             06  CNTL-AVL-UNAVL2-PEN-DAYS.
+198200                 08  CNTL-AVL-UNAVL2-PEN-DAYS-N     PIC 9(02).
+198300         04  CNTL-AVL-UNAVL-OTH-ARRAY   OCCURS 3 TIMES.
+198400             06  CNTL-AVL-UNAVL-OTH-ACT-CD          PIC X(01).
+198500             06  CNTL-AVL-UNAVL-OTH-TM-CD           PIC X(01).
+198600             06  CNTL-AVL-UNAVL-OTH-PEN-DAYS.
+198700                 08  CNTL-AVL-UNAVL-OTH-PEN-DAYS-N  PIC 9(02).
+198800         04  CNTL-AVL-SYSTEM-TYPE-CD                PIC X(01).
+198900             88  CNTL-AVL-SYSTEM-LIST               VALUE 'Y'.
+199000         04  CNTL-AVL-SERVICE-TYPE-CD               PIC X(01).
+199100             88  CNTL-AVL-SVC-ROAD                  VALUE 'R'.
+199200             88  CNTL-AVL-SVC-YARD                  VALUE 'Y'.
+199300             88  CNTL-AVL-SVC-COMBO                 VALUE 'C'.
+199400         04  CNTL-AVL-DAILY-MARK-CD                 PIC X(01).
+199500             88  CNTL-AVL-DAILY-MARK                VALUE 'Y'.
+199600         04  FILLER                                 PIC X(11).
+199700         04  CNTL-AVL-REC72-CHANGE-INFO             PIC X(18).
+199800**
+199900******************  CNTL-AREA-73 **************************
+200000*
+200100     02  CNTL-AREA-73 REDEFINES CNTL-AREA.
+200200         04  FILLER                                 PIC X(20).
+200300         04  CNTL-AVL-TIE-BREAK-CD                  PIC X(01).
+200400         04  CNTL-AVL-NEW-TO-LIST-CD                PIC X(01).
+200500         04  CNTL-AVL-CRAFT-ARRAY       OCCURS 5 TIMES.
+200600             06  CNTL-AVL-CRAFT                     PIC X(02).
+200700         04  CNTL-AVL-ROSTER-ARRAY      OCCURS 5 TIMES.
+200800             06  CNTL-AVL-ROSTER                    PIC X(04).
+200900             06  CNTL-AVL-ROSTER-CC                 PIC X(02).
+201000         04  CNTL-AVL-REQUIRED-DAYS.
+201100             06  CNTL-AVL-REQUIRED-DAYS-N           PIC 9(02).
+201200         04  CNTL-AVL-ADD-BEFORE-TIME.
+201300             06  CNTL-AVL-ADD-BEFORE-TIME-N         PIC 9(04).
+201400         04  CNTL-AVL-QUAL-RESTRICT-CD              PIC X(04).
+201500         04  CNTL-AVL-ALT-DDSD-ARRAY    OCCURS 2 TIMES.
+201600             06  CNTL-AVL-ALT-DIST                  PIC X(02).
+201700             06  CNTL-AVL-ALT-SDIST                 PIC X(02).
+201800*CNC0584-BEG.
+201900         04  CNTL-XCLUDE-SB-AREA                    PIC X(08).
+202000         04  CNTL-XCLUDE-SB-ARRAY REDEFINES CNTL-XCLUDE-SB-AREA.
+202100             06  CNTL-XCLUDE-SPAREBOARD PIC X(02) OCCURS 4 TIMES.
+202200         04  FILLER                                 PIC X(150).
+202300*        04  FILLER                                 PIC X(158).
+202400*CNC0584-END.
+202500         04  CNTL-AVL-REC73-CHANGE-INFO             PIC X(18).
+202600**
+202700******************  CNTL-AREA-74 **************************
+202800*
+202900     02  CNTL-AREA-74 REDEFINES CNTL-AREA.
+203000         04  FILLER                                 PIC X(06).
+203100         04  CNTL-AVL-CC                            PIC X(02).
+203200         04  FILLER                                 PIC X(12).
+203300         04  CNTL-AVL-CALL-RD-EVENT.
+203400             06  CNTL-AVL-CALL-RD-AVLIST.
+203500                 08  CNTL-AVL-CALL-RD-DIST          PIC X(02).
+203600                 08  CNTL-AVL-CALL-RD-SDIST         PIC X(02).
+203700                 08  CNTL-AVL-CALL-RD-ID            PIC X(02).
+203800             06  CNTL-AVL-CALL-RD-ACT-CD            PIC X(01).
+203900             06  CNTL-AVL-CALL-RD-TM-CD             PIC X(01).
+204000         04  CNTL-AVL-CALL-YD-EVENT.
+204100             06  CNTL-AVL-CALL-YD-AVLIST.
+204200                 08  CNTL-AVL-CALL-YD-DIST          PIC X(02).
+204300                 08  CNTL-AVL-CALL-YD-SDIST         PIC X(02).
+204400                 08  CNTL-AVL-CALL-YD-ID            PIC X(02).
+204500             06  CNTL-AVL-CALL-YD-ACT-CD            PIC X(01).
+204600             06  CNTL-AVL-CALL-YD-TM-CD             PIC X(01).
+204700         04  CNTL-AVL-TIEUP-EVENT.
+204800             06  CNTL-AVL-TIEUP-AVLIST.
+204900                 08  CNTL-AVL-TIEUP-DIST            PIC X(02).
+205000                 08  CNTL-AVL-TIEUP-SDIST           PIC X(02).
+205100                 08  CNTL-AVL-TIEUP-ID              PIC X(02).
+205200             06  CNTL-AVL-TIEUP-ACT-CD              PIC X(01).
+205300             06  CNTL-AVL-TIEUP-TM-CD               PIC X(01).
+205400         04  CNTL-AVL-SEN-MOVE1-EVENT.
+205500             06  CNTL-AVL-SEN-MOVE1-CD-ARRAY   OCCURS 3 TIMES.
+205600                 08  CNTL-AVL-SEN-MOVE1-CD          PIC X(01).
+205700             06  CNTL-AVL-SEN-MOVE1-AVLIST.
+205800                 08  CNTL-AVL-SEN-MOVE1-DIST        PIC X(02).
+205900                 08  CNTL-AVL-SEN-MOVE1-SDIST       PIC X(02).
+206000                 08  CNTL-AVL-SEN-MOVE1-ID          PIC X(02).
+206100             06  CNTL-AVL-SEN-MOVE1-ACT-CD          PIC X(01).
+206200             06  CNTL-AVL-SEN-MOVE1-TM-CD           PIC X(01).
+206300         04  CNTL-AVL-SEN-MOVE2-EVENT.
+206400             06  CNTL-AVL-SEN-MOVE2-CD-ARRAY   OCCURS 3 TIMES.
+206500                 08  CNTL-AVL-SEN-MOVE2-CD          PIC X(01).
+206600             06  CNTL-AVL-SEN-MOVE2-AVLIST.
+206700                 08  CNTL-AVL-SEN-MOVE2-DIST        PIC X(02).
+206800                 08  CNTL-AVL-SEN-MOVE2-SDIST       PIC X(02).
+206900                 08  CNTL-AVL-SEN-MOVE2-ID          PIC X(02).
+207000             06  CNTL-AVL-SEN-MOVE2-ACT-CD          PIC X(01).
+207100             06  CNTL-AVL-SEN-MOVE2-TM-CD           PIC X(01).
+207200         04  CNTL-AVL-CREW-PICK-EVENT.
+207300             06  CNTL-AVL-CREW-PICK-AVLIST.
+207400                 08  CNTL-AVL-CREW-PICK-DIST        PIC X(02).
+207500                 08  CNTL-AVL-CREW-PICK-SDIST       PIC X(02).
+207600                 08  CNTL-AVL-CREW-PICK-ID          PIC X(02).
+207700             06  CNTL-AVL-CREW-PICK-ACT-CD          PIC X(01).
+207800             06  CNTL-AVL-CREW-PICK-TM-CD           PIC X(01).
+207900         04  CNTL-AVL-STAT-CHG1-EVENT.
+208000             06  CNTL-AVL-STAT-CHG1-CD-ARRAY   OCCURS 5 TIMES.
+208100                 08  CNTL-AVL-STAT-CHG1-CD          PIC X(01).
+208200             06  CNTL-AVL-STAT-CHG1-AVLIST.
+208300                 08  CNTL-AVL-STAT-CHG1-DIST        PIC X(02).
+208400                 08  CNTL-AVL-STAT-CHG1-SDIST       PIC X(02).
+208500                 08  CNTL-AVL-STAT-CHG1-ID          PIC X(02).
+208600             06  CNTL-AVL-STAT-CHG1-ACT-CD          PIC X(01).
+208700             06  CNTL-AVL-STAT-CHG1-TM-CD           PIC X(01).
+208800         04  CNTL-AVL-STAT-CHG2-EVENT.
+208900             06  CNTL-AVL-STAT-CHG2-CD-ARRAY   OCCURS 5 TIMES.
+209000                 08  CNTL-AVL-STAT-CHG2-CD          PIC X(01).
+209100             06  CNTL-AVL-STAT-CHG2-AVLIST.
+209200                 08  CNTL-AVL-STAT-CHG2-DIST        PIC X(02).
+209300                 08  CNTL-AVL-STAT-CHG2-SDIST       PIC X(02).
+209400                 08  CNTL-AVL-STAT-CHG2-ID          PIC X(02).
+209500             06  CNTL-AVL-STAT-CHG2-ACT-CD          PIC X(01).
+209600             06  CNTL-AVL-STAT-CHG2-TM-CD           PIC X(01).
+209700         04  CNTL-AVL-STAT-CHG3-EVENT.
+209800             06  CNTL-AVL-STAT-CHG3-CD-ARRAY   OCCURS 5 TIMES.
+209900                 08  CNTL-AVL-STAT-CHG3-CD          PIC X(01).
+210000             06  CNTL-AVL-STAT-CHG3-AVLIST.
+210100                 08  CNTL-AVL-STAT-CHG3-DIST        PIC X(02).
+210200                 08  CNTL-AVL-STAT-CHG3-SDIST       PIC X(02).
+210300                 08  CNTL-AVL-STAT-CHG3-ID          PIC X(02).
+210400             06  CNTL-AVL-STAT-CHG3-ACT-CD          PIC X(01).
+210500             06  CNTL-AVL-STAT-CHG3-TM-CD           PIC X(01).
+210600         04  CNTL-AVL-ALL-OTHER-EVENT.
+210700             06  CNTL-AVL-ALL-OTHER-AVLIST.
+210800                 08  CNTL-AVL-ALL-OTHER-DIST        PIC X(02).
+210900                 08  CNTL-AVL-ALL-OTHER-SDIST       PIC X(02).
+211000                 08  CNTL-AVL-ALL-OTHER-ID          PIC X(02).
+211100             06  CNTL-AVL-ALL-OTHER-ACT-CD          PIC X(01).
+211200             06  CNTL-AVL-ALL-OTHER-TM-CD           PIC X(01).
+211300         04  FILLER                                 PIC X(01).
+211400         04  CNTL-AVL-MAN-REMOVE-EVENT.
+211500             06  CNTL-AVL-MAN-REMOVE-AVLIST.
+211600                 08  CNTL-MAN-REMOVE-DIST           PIC X(02).
+211700                 08  CNTL-MAN-REMOVE-SDIST          PIC X(02).
+211800                 08  CNTL-MAN-REMOVE-ID             PIC X(02).
+211900             06  CNTL-AVL-MAN-REMOVE-ACT-CD         PIC X(01).
+212000             06  CNTL-AVL-MAN-REMOVE-TM-CD          PIC X(01).
+212100         04  CNTL-AVL-TO-PLACE-EVENT.
+212200             06  CNTL-AVL-TO-PLACE-AVLIST.
+212300                 08  CNTL-TO-PLACE-DIST             PIC X(02).
+212400                 08  CNTL-TO-PLACE-SDIST            PIC X(02).
+212500                 08  CNTL-TO-PLACE-ID               PIC X(02).
+212600             06  CNTL-AVL-TO-PLACE-ACT-CD           PIC X(01).
+212700             06  CNTL-AVL-TO-PLACE-TM-CD            PIC X(01).
+212800         04  FILLER                                 PIC X(100).
+212900         04  CNTL-AVL-REC74-CHANGE-INFO             PIC X(18).
+213000**
+213100******************  CNTL-AREA-75 **************************
+213200*
+213300     02  CNTL-AREA-75 REDEFINES CNTL-AREA.
+213400         04  FILLER                    PIC X(002).
+213500         04  CNTL-75-PROFILE           PIC X(008).
+213600         04  CNTL-75-CREW-UNIT         PIC X(001).
+213700             88  CNTL-75-CREW-ENGINE       VALUE 'E'.
+213800             88  CNTL-75-CREW-TRAIN        VALUE 'T'.
+213900             88  CNTL-75-CREW-ALL          VALUE '*'.
+214000         04  FILLER                    PIC X(009).
+214100         04  CNTL-75-SCHEDULE-TYPE     PIC X(001).
+214200             88  CNTL-75-SCHEDULE-DAILY    VALUE 'D'.
+214300             88  CNTL-75-SCHEDULE-EVENT    VALUE 'E'.
+214400             88  CNTL-75-SCHEDULE-CARDED   VALUE 'C'.
+214500             88  CNTL-75-SCHEDULE-BID-PACK VALUE 'B'.
+214600         04  CNTL-75-SCH-DELAY-FLAG    PIC X(001).
+214700             88  CNTL-75-SCH-CREW          VALUE 'Y'.
+214800             88  CNTL-75-ALT-CREW          VALUE 'N'.
+214900         04  CNTL-75-ALT-DIST          PIC X(002).
+215000         04  CNTL-75-ALT-SDIST         PIC X(002).
+215100         04  CNTL-75-ALT-POOL          PIC X(002).
+215200         04  CNTL-75-ALT-TERM          PIC X(001).
+215300         04  CNTL-75-SCH-CYCLE-DAYS    PIC X(003).
+215400         04  CNTL-75-SCH-START-DAY     PIC X(005).
+215500         04  CNTL-75-SCH-START-TIME    PIC X(004).
+215600         04  FILLER                    PIC X(001).
+215700         04  CNTL-75-CATCHUP-FLAG      PIC X(001).
+215800             88  CNTL-75-TURN-CARRIED      VALUE 'C' 'D'.
+215900             88  CNTL-75-TURN-CONT         VALUE 'C'.
+216000             88  CNTL-75-TURN-WIND         VALUE 'D'.
+216100         04  CNTL-75-LAST-CREW-USED    PIC X(009).
+216200         04  CNTL-75-LAST-CATCHUP-DATE PIC X(005).
+216300         04  CNTL-75-UNDO-CREW-USED    PIC X(009).
+216400         04  CNTL-75-UNDO-CATCHUP-DATE PIC X(005).
+216500         04  CNTL-75-OPR-START-DAY     PIC X(005).
+216600         04  CNTL-75-ALT-SRC-SCHD      PIC X(001).
+216700         04  CNTL-75-UPDATE-DATE       PIC X(006).
+216800         04  CNTL-75-UPDATE-TIME       PIC X(004).
+216900         04  CNTL-75-UPDATE-USERID     PIC X(008).
+217000         04  FILLER                    PIC X(161).
+217100**
+217200******************  CNTL-AREA-76 **************************
+217300*
+217400     02  CNTL-AREA-76 REDEFINES CNTL-AREA.
+217500         04  FILLER                    PIC X(002).
+217600         04  CNTL-76-PROFILE           PIC X(008).
+217700         04  CNTL-76-CREW-UNIT         PIC X(001).
+217800             88  CNTL-76-CREW-ENGINE       VALUE 'E'.
+217900             88  CNTL-76-CREW-TRAIN        VALUE 'T'.
+218000             88  CNTL-76-CREW-ALL          VALUE '*'.
+218100         04  CNTL-76-DAY               PIC X(003).
+218200         04  CNTL-76-SEGMENT           PIC X(003).
+218300         04  CNTL-76-SEQ               PIC X(003).
+218400             88  CNTL-76-STATS             VALUE '000'.
+218500         04  CNTL-76-CYCLE-DAYS        PIC X(003).
+218600         04  CNTL-76-CYCLE-DAYS-NUM REDEFINES
+218700             CNTL-76-CYCLE-DAYS        PIC 9(003).
+218800         04  CNTL-76-CYCLE-START-DAY   PIC X(005).
+218900         04  CNTL-76-CYCLE-START-TIME  PIC X(004).
+219000         04  CNTL-76-CYCLE-END-TIME    PIC X(004).
+219100         04  CNTL-76-POINTER           PIC X(003).
+219200         04  CNTL-76-POINTER-NUM REDEFINES
+219300             CNTL-76-POINTER           PIC 9(003).
+219400         04  CNTL-76-REST-FLAG         PIC X(001).
+219500             88  CNTL-76-DISPLAY-UNRESTED  VALUE 'Y'.
+219600         04  CNTL-76-SCHEDULE-LAST-USED.
+219700             06  CNTL-76-LU-TRAIN       PIC X(010).
+219800             06  CNTL-76-LU-DATE-TIME.
+219900                 15  CNTL-76-LU-DATE PIC X(006).
+220000                 15  CNTL-76-LU-TIME PIC X(004).
+220100         04  CNTL-76-HOME-POINT.
+220200             06  CNTL-76-HOME-DIST     PIC X(002).
+220300             06  CNTL-76-HOME-SUB-DIST PIC X(002).
+220400             06  CNTL-76-HOME-POOL     PIC X(002).
+220500         04  CNTL-76-TURN-SEL.
+220600             88  CNTL-76-FROM-POOL         VALUE 'POOL',
+220700                                                 '****'.
+220800             88  CNTL-76-MAKEUP-CREW       VALUE 'XTRA'.
+220900             88  CNTL-76-OFF               VALUE 'OFF ',
+221000                                                 ' OFF'.
+221100             06  FILLER                PIC X(001).
+221200             06  FILLER                PIC X(001).
+221300             06  FILLER                PIC X(001).
+221400             06  FILLER                PIC X(001).
+221500         04  CNTL-76-LOC.
+221600             06  CNTL-76-DIST-SEL      PIC X(002).
+221700             06  CNTL-76-SUB-DIST-SEL  PIC X(002).
+221800             06  CNTL-76-POOL-SEL      PIC X(002).
+221900         04  CNTL-76-LAST-POINTER      PIC X(003).
+222000         04  CNTL-76-ALT-DIST          PIC X(002).
+222100         04  CNTL-76-ALT-SDIST         PIC X(002).
+222200         04  CNTL-76-ALT-POOL          PIC X(002).
+222300         04  CNTL-76-ALT-TERM          PIC X(001).
+222400         04  CNTL-76-LOC-TERM-SEL      PIC X(001).
+222500         04  CNTL-76-UPDATE-DATE       PIC X(006).
+222600         04  CNTL-76-UPDATE-TIME       PIC X(004).
+222700         04  CNTL-76-UPDATE-USERID     PIC X(008).
+222800         04  FILLER                    PIC X(151).
+222900**
+223000******************  CNTL-AREA-77 **************************
+223100*
+223200     02  CNTL-AREA-77 REDEFINES CNTL-AREA.
+223300         04  FILLER                    PIC X(002).
+223400         04  CNTL-77-DIST              PIC X(002).
+223500         04  CNTL-77-SUB-DIST          PIC X(002).
+223600         04  CNTL-77-POOL              PIC X(002).
+223700         04  CNTL-77-TERM              PIC X(001).
+223800         04  CNTL-77-CREW              PIC X(002).
+223900         04  CNTL-77-TRAIN             PIC X(008).
+224000         04  FILLER                    PIC X(001).
+224100         04  CNTL-77-POINTER-FLAG      PIC X(001).
+224200             88  CNTL-77-ADVANCE-POINTER   VALUE 'Y'.
+224300         04  CNTL-77-CREW-DIST         PIC X(002).
+224400         04  CNTL-77-CREW-SDIST        PIC X(002).
+224500         04  CNTL-77-CREW-POOL         PIC X(002).
+224600         04  CNTL-77-CREW-TERM         PIC X(001).
+224700         04  CNTL-77-CREW-ROTATION     PIC X(001).
+224800         04  CNTL-77-CREW-FROM-TIME    PIC X(004).
+224900         04  CNTL-77-CREW-TO-TIME      PIC X(004).
+225000         04  CNTL-77-UPDATE-DATE       PIC X(06).
+225100         04  CNTL-77-UPDATE-TIME       PIC X(04).
+225200         04  CNTL-77-UPDATE-USERID     PIC X(08).
+225300         04  FILLER                    PIC X(201).
+225400**
+225500******************  CNTL-AREA-78 **************************
+225600*
+225700     02  CNTL-AREA-78 REDEFINES CNTL-AREA.
+225800         04  FILLER                    PIC X(002).
+225900         04  CNTL-78-TOPC-STA          PIC X(005).
+226000         04  FILLER                    PIC X(013).
+226100         04  CNTL-78-CATS-STA-ARRAY.
+226200             06  CNTL-78-CATS-STA  OCCURS 10 TIMES
+226300                                       PIC X(005).
+226400         04  CNTL-78-UPDATE-DATE       PIC X(06).
+226500         04  CNTL-78-UPDATE-TIME       PIC X(04).
+226600         04  CNTL-78-UPDATE-USERID     PIC X(08).
+226700         04  FILLER                    PIC X(168).
+226800**
+226900******************  CNTL-AREA-79 **************************
+227000*
+227100     02  CNTL-AREA-79 REDEFINES CNTL-AREA.
+227200         04  FILLER                    PIC X(002).
+227300         04  CNTL-BOARD-ADJ-ID         PIC X(002).
+227400         04  FILLER                    PIC X(016).
+227500         04  CNTL-BOARD-ADJ-POOL1.
+227600             06  CNTL-BOARD-ADJ-DIST1  PIC X(002).
+227700             06  CNTL-BOARD-ADJ-SDIST1 PIC X(002).
+227800             06  CNTL-BOARD-ADJ-PP1    PIC X(002).
+227900             06  CNTL-BOARD-ADJ-PCT1   PIC X(004).
+228000             06  CNTL-BOARD-ADJ-PCT1-NUM REDEFINES
+228100                 CNTL-BOARD-ADJ-PCT1   PIC 9(004).
+228200             06  CNTL-BOARD-ADJ-PCT1-DEC REDEFINES
+228300                 CNTL-BOARD-ADJ-PCT1   PIC 99V99.
+228400         04  CNTL-BOARD-ADJ-POOL2.
+228500             06  CNTL-BOARD-ADJ-DIST2  PIC X(002).
+228600             06  CNTL-BOARD-ADJ-SDIST2 PIC X(002).
+228700             06  CNTL-BOARD-ADJ-PP2    PIC X(002).
+228800             06  CNTL-BOARD-ADJ-PCT2   PIC X(004).
+228900             06  CNTL-BOARD-ADJ-PCT2-NUM REDEFINES
+229000                 CNTL-BOARD-ADJ-PCT2   PIC 9(004).
+229100             06  CNTL-BOARD-ADJ-PCT2-DEC REDEFINES
+229200                 CNTL-BOARD-ADJ-PCT2   PIC 99V99.
+229300         04  FILLER                    PIC X(198).
+229400         04  CNTL-BOARD-ADJ-UPD-DATE   PIC X(006).
+229500         04  CNTL-BOARD-ADJ-UPD-TIME   PIC X(004).
+229600         04  CNTL-BOARD-ADJ-UPD-USER   PIC X(008).
+229700**
+229800******************  CNTL-AREA-80 **************************
+229900*
+230000     02  CNTL-AREA-80 REDEFINES CNTL-AREA.
+230100         04  FILLER                     PIC XX.
+230200         04  FILLER                     PIC X(6).
+230300         04  CNTL-HOST-I-O              PIC X.
+230400         04  CNTL-HOST-TYPE             PIC X.
+230500             88  CNTL-HOST-QUAL-EXPIRY      VALUE 'Q'.
+230600         04  CNTL-HOST-SEQ              PIC X(2).
+230700             88  CNTL-HOST-HEADER           VALUE '00'.
+230800             88  CNTL-HOST-PRINTER          VALUE 'P1'.
+230900             88  CNTL-HOST-EMAIL-1          VALUE 'M1'.
+231000             88  CNTL-HOST-EMAIL-2          VALUE 'M2'.
+231100             88  CNTL-HOST-EMAIL-3          VALUE 'M3'.
+231200         04  CNTL-HOST-CRAFT-GRP        PIC XX.
+231300         04  FILLER                     PIC X(6).
+231400         04  CNTL-HOST-ADDRESS-AREA     PIC X(236).
+231500         04  CNTL-HOST-HEADER-AREA  REDEFINES
+231600             CNTL-HOST-ADDRESS-AREA.
+231700             06 CNTL-HOST-PRNTR-FL      PIC X(01).
+231800                88 CNTL-HOST-PRNTR-ACTIVE     VALUE 'Y'.
+231900                88 CNTL-HOST-PRNTR-NOT-ACTIVE VALUE 'N'.
+232000             06 CNTL-HOST-EMAIL-FL      PIC X(01).
+232100                88 CNTL-HOST-EMAIL-ACTIVE     VALUE 'Y'.
+232200                88 CNTL-HOST-EMAIL-NOT-ACTIVE VALUE 'N'.
+232300             06 CNTL-80-UPD-DATE        PIC X(006).
+232400             06 CNTL-80-UPD-TIME        PIC X(004).
+232500             06 CNTL-80-UPD-USER        PIC X(008).
+232600             06 FILLER                  PIC X(216).
+232700         04  CNTL-HOST-PRINTER-AREA REDEFINES
+232800             CNTL-HOST-ADDRESS-AREA.
+232900             06 CNTL-HOST-ADDR-ARRAY.
+233000                08 CNTL-HOST-ADDR OCCURS 10 TIMES
+233100                                        PIC X(8).
+233200             06 FILLER                  PIC X(156).
+233300         04  CNTL-HOST-EMAIL-AREA   REDEFINES
+233400             CNTL-HOST-ADDRESS-AREA.
+233500             06 CNTL-HOST-EMAIL-ADDR-ARRAY.
+233600                08 CNTL-HOST-EMAIL-ADDR OCCURS 4 TIMES
+233700                                        PIC X(50).
+233800             06 FILLER                  PIC X(36).
+233900**
+234000******************  CNTL-AREA-81 **************************
+234100*
+234200     02  CNTL-AREA-81 REDEFINES CNTL-AREA.
+234300         04  FILLER                     PIC X(002).
+234400         04  CNTL-81-ORIGIN-STN         PIC X(005).
+234500         04  CNTL-81-PROFILE            PIC X(008).
+234600         04  CNTL-81-TOPC-STN-ID        PIC X(003).
+234700         04  FILLER                     PIC X(002).
+234800         04  CNTL-81-ALT-EN-AREA.
+234900             06  CNTL-81-ALT-EN-DIST    PIC X(002).
+235000             06  CNTL-81-ALT-EN-SDIST   PIC X(002).
+235100             06  CNTL-81-ALT-EN-POOL    PIC X(002).
+235200             06  CNTL-81-ALT-EN-TERM    PIC X(001).
+235300             06  CNTL-81-ALT-EN-MU      PIC X(001).
+235400             06  CNTL-81-ALT-EN-DISP    PIC X(001).
+235500             06  CNTL-81-ALT-EN-PROFILE PIC X(008).
+235600         04  CNTL-81-ALT-TR-AREA.
+235700             06  CNTL-81-ALT-TR-DIST    PIC X(002).
+235800             06  CNTL-81-ALT-TR-SDIST   PIC X(002).
+235900             06  CNTL-81-ALT-TR-POOL    PIC X(002).
+236000             06  CNTL-81-ALT-TR-TERM    PIC X(001).
+236100             06  CNTL-81-ALT-TR-MU      PIC X(001).
+236200             06  CNTL-81-ALT-TR-DISP    PIC X(001).
+236300             06  CNTL-81-ALT-TR-PROFILE PIC X(008).
+236400         04  CNTL-81-ALT-EN-TK-PROFILE  PIC X(012).
+236500         04  CNTL-81-ALT-TR-TK-PROFILE  PIC X(012).
+236600         04  CNTL-81-ALT-EN-AWAY-FL     PIC X(001).
+236700         04  CNTL-81-ALT-TR-AWAY-FL     PIC X(001).
+236800*CNC0544-BEG
+236900         04  CNTL-81-ALT-EST-RUN-TM     PIC X(004).
+237000*CNC0544-END
+237100         04  FILLER                     PIC X(154).
+237200         04  CNTL-81-UPD-DATE           PIC X(006).
+237300         04  CNTL-81-UPD-TIME           PIC X(004).
+237400         04  CNTL-81-UPD-USER           PIC X(008).
+237500**
+237600******************  CNTL-AREA-90 **************************
+237700*
+237800     02  CNTL-AREA-90 REDEFINES CNTL-AREA.
+237900         04  FILLER            PIC XX.
+238000         04  CNTL-RPT-NBR      PIC XX.
+238100         04  CNTL-RPT-INX      PIC XX.
+238200         04  FILLER            PIC X(14).
+238300         04  CNTL-RPT-DIST     PIC XX.
+238400         04  CNTL-RPT-SDIST    PIC XX.
+238500         04  CNTL-RPT-YARD     PIC X.
+238600         04  CNTL-RPT-TABLE-ARRAY.
+238700             06  CNTL-RPT-TABLE  OCCURS 15 TIMES.
+238800                 08  CNTL-RPT-POOL PIC XX.
+238900         04  CNTL-90-UPDATE-DATE   PIC X(006).
+239000         04  CNTL-90-UPDATE-TIME   PIC X(004).
+239100         04  CNTL-90-UPDATE-USERID PIC X(008).
+239200         04  FILLER            PIC X(183).
+239300**
+239400******************  CNTL-AREA-91 **************************
+239500*
+239600     02  CNTL-AREA-91 REDEFINES CNTL-AREA.
+239700         04  FILLER                       PIC XX.
+239800         04  CNTL-USERID                  PIC X(8).
+239900         04  CNTL-USERID-AUTH-DIST-SDIST.
+240000             06  CNTL-USERID-AUTH-DIST    PIC XX.
+240100             06  CNTL-USERID-AUTH-SDIST   PIC XX.
+240200         04  FILLER                       PIC X(6).
+240300         04  CNTL-USERID-AUTH-TYPE        PIC X.
+240400             88  CNTL-USER-INQ-AUTHORITY          VALUE 'I'.
+240500             88  CNTL-USER-UPD-AUTHORITY          VALUE 'U'.
+240600             88  CNTL-USER-HI-AUTHORITY           VALUE 'H'.
+240700         04  CNTL-USERID-DESC             PIC X(33).
+240800         04  CNTL-USERID-INBASKET-ARRAY OCCURS 3.
+240900             06  CNTL-USERID-INBASKET     PIC X(8).
+241000         04  CNTL-USERID-TYPE             PIC X(002).
+241100             88  CNTL-USERID-LEVEL1           VALUE '01'.
+241200             88  CNTL-USERID-LEVEL2           VALUE '02'.
+241300             88  CNTL-USERID-LEVEL3           VALUE '03'.
+241400             88  CNTL-USERID-CREW-CALLER      VALUE '04'.
+241500         04  CNTL-USERID-AUTO-TASK        PIC X.
+241600             88  CNTL-USER-DISPLAY-TASK       VALUE ' ' 'Y'.
+241700             88  CNTL-USER-NO-AUTO-TASK       VALUE 'N'.
+241800         04  CNTL-USERID-QUICK-TIE        PIC X.
+241900             88  CNTL-USER-COMPLETES-QUICK-TIE VALUE 'Y'.
+242000         04  CNTL-USERID-TCHK-AUTH        PIC X.
+242100             88  CNTL-USERID-TCHK-AUTHORIZED   VALUE 'Y'.
+242200         04  CNTL-USERID-PLD-DELETE-FLAG  PIC X(001).
+242300             88  CNTL-USERID-PLD-DELETE-YES    VALUE 'P'.
+242400         04  CNTL-91-UPDATE-DATE          PIC X(006).
+242500         04  CNTL-91-UPDATE-TIME          PIC X(004).
+242600         04  CNTL-91-UPDATE-USER          PIC X(008).
+242700         04  FILLER                       PIC X(154).
+242800**
+242900******************  CNTL-AREA-92 **************************
+243000*
+243100     02  CNTL-AREA-92 REDEFINES CNTL-AREA.
+243200         04  FILLER                  PIC X(6).
+243300         04  CNTL-MKUP-ASGN-TYPE     PIC X.
+243400         04  CNTL-MKUP-ASGNMENT      PIC X(8).
+243500         04  CNTL-MKUP-ASGN
+243600             REDEFINES CNTL-MKUP-ASGNMENT.
+243700             05  CNTL-MKUP-ASGN-1    PIC X.
+243800             05  CNTL-MKUP-ASGN-2    PIC X.
+243900             05  CNTL-MKUP-ASGN-3    PIC X.
+244000             05  CNTL-MKUP-ASGN-4    PIC X.
+244100             05  CNTL-MKUP-ASGN-5    PIC X.
+244200             05  CNTL-MKUP-ASGN-6    PIC X.
+244300             05  CNTL-MKUP-ASGN-CC   PIC XX.
+244400         04  FILLER REDEFINES CNTL-MKUP-ASGN.
+244500             05  CNTL-MKUP-ASGN-1CHAR    PIC X OCCURS 6 TIMES.
+244600             05  FILLER              PIC XX.
+244700         04  CNTL-MKUP-LO-CODE       PIC X.
+244800         04  FILLER                  PIC X(4).
+244900         04  CNTL-MKUP-YES-FLAG      PIC X.
+245000         04  CNTL-MKUP-RESTR-REG     PIC 9(4).
+245100         04  CNTL-MKUP-RESTR-OC      PIC 9(4).
+245200         04  FILLER                  PIC X(227).
+245300**
+245400******************  CNTL-AREA-93 **************************
+245500*
+245600     02  CNTL-AREA-93 REDEFINES CNTL-AREA.
+245700         04  FILLER                  PIC X(2).
+245800         04  CNTL-FRA-CICS-ID        PIC X(4).
+245900         04  FILLER                  PIC X(14).
+246000         04  CNTL-FRA-PRINTER        PIC X(8).
+246100         04  CNTL-FRA-LOCATION       PIC X(20).
+246200         04  FILLER                  PIC X(208).
+246300*
+246400******************  CNTL-AREA-94 **************************
+246500*
+246600     02  CNTL-AREA-94 REDEFINES CNTL-AREA.
+246700         04  FILLER                       PIC X(2).
+246800         04  CNTL-IVR-NTFY-DIST           PIC X(2).
+246900         04  CNTL-IVR-NTFY-SDIST          PIC X(2).
+247000         04  CNTL-IVR-NTFY-CRAFT          PIC X(2).
+247100         04  CNTL-IVR-NTFY-ASGN-TYP       PIC X(1).
+247200         04  CNTL-IVR-NTFY-ASGN           PIC X(6).
+247300         04  FILLER                       PIC X(5).
+247400         04  CNTL-AWRD-IVR-NTFY-FL        PIC X(1).
+247500             88  CNTL-AWRD-IVR-NTFY            VALUE 'Y'.
+247600         04  CNTL-DSPL-IVR-NTFY-FL        PIC X(1).
+247700             88  CNTL-DSPL-IVR-NTFY            VALUE 'Y'.
+247800         04  CNTL-AWRD-IVR-LAG-TIME       PIC X(4).
+247900         04  CNTL-DSPL-IVR-LAG-TIME       PIC X(4).
+248000         04  CNTL-AWRD-IVR-CYCLE-TIME     PIC X(4).
+248100         04  CNTL-DSPL-IVR-CYCLE-TIME     PIC X(4).
+248200         04  CNTL-AWRD-MAX-NTFY-ATTMP     PIC X(3).
+248300         04  CNTL-DSPL-MAX-NTFY-ATTMP     PIC X(3).
+248400         04  CNTL-AWRD-PUSHBACK-MAX       PIC X(2).
+248500         04  CNTL-DSPL-PUSHBACK-MAX       PIC X(2).
+248600         04  CNTL-AWRD-NTFY-LAG-TIME      PIC X(4).
+248700         04  CNTL-DSPL-NTFY-LAG-TIME      PIC X(4).
+248800         04  CNTL-AWRD-IVR-USER-AUTH-FL   PIC X(1).
+248900             88  CNTL-AWRD-IVR-USER-AUTH       VALUE 'Y'.
+249000         04  CNTL-DSPL-IVR-USER-AUTH-FL   PIC X(1).
+249100             88  CNTL-DSPL-IVR-USER-AUTH       VALUE 'Y'.
+249200         04  CNTL-AWRD-CALL-MAND-REST-FL  PIC X(1).
+249300             88  CNTL-AWRD-CALL-MAND-REST      VALUE 'Y'.
+249400         04  CNTL-DSPL-CALL-MAND-REST-FL  PIC X(1).
+249500             88  CNTL-DSPL-CALL-MAND-REST      VALUE 'Y'.
+249600         04  CNTL-AWRD-CALL-PERS-REST-FL  PIC X(1).
+249700             88  CNTL-AWRD-CALL-PERS-REST      VALUE 'Y'.
+249800         04  CNTL-DSPL-CALL-PERS-REST-FL  PIC X(1).
+249900             88  CNTL-DSPL-CALL-PERS-REST      VALUE 'Y'.
+250000         04  CNTL-AWRD-CALL-OUT-TOWN-FL   PIC X(1).
+250100             88  CNTL-AWRD-CALL-OUT-TOWN       VALUE 'Y'.
+250200         04  CNTL-DSPL-CALL-OUT-TOWN-FL   PIC X(1).
+250300             88  CNTL-DSPL-CALL-OUT-TOWN       VALUE 'Y'.
+250400         04  CNTL-AWRD-PRXY-MSG-FL        PIC X(1).
+250500             88  CNTL-AWRD-PRXY-MSG            VALUE 'Y'.
+250600         04  CNTL-DSPL-PRXY-MSG-FL        PIC X(1).
+250700             88  CNTL-DSPL-PRXY-MSG            VALUE 'Y'.
+250800         04  CNTL-AWRD-OBSRV-CALL-PRIV-FL PIC X(1).
+250900             88  CNTL-AWRD-OBSRV-CALL-PRIV     VALUE 'Y'.
+251000         04  CNTL-DSPL-OBSRV-CALL-PRIV-FL PIC X(1).
+251100             88  CNTL-DSPL-OBSRV-CALL-PRIV     VALUE 'Y'.
+251200         04  CNTL-94-UPDATE-DATE          PIC X(6).
+251300         04  CNTL-94-UPDATE-TIME          PIC X(4).
+251400         04  CNTL-94-UPDATE-USER          PIC X(8).
+251500         04  FILLER                       PIC X(170).
+251600*
+251700******************  CNTL-AREA-95 **************************
+251800*
+251900     02  CNTL-AREA-95 REDEFINES CNTL-AREA.
+252000         04  FILLER                       PIC XX.
+252100         04  CNTL-TRANSACTION             PIC X(4).
+252200         04  FILLER                       PIC X(14).
+252300         04  CNTL-TRANS-DESC              PIC X(75).
+252400         04  CNTL-TRANS-DAYS-OF-MONTH.
+252500             06  CNTL-TRANS-DAY-OF-MONTH OCCURS 4 TIMES.
+252600                 08  CNTL-TRANS-DOM       PIC X(2).
+252700         04  CNTL-TRANS-DAYS-OF-WEEK.
+252800             06  CNTL-TRANS-DAY-OF-WEEK  OCCURS 7 TIMES.
+252900                 08  CNTL-TRANS-DOW       PIC X(1).
+253000         04  CNTL-TRANS-TIMES-OF-DAY.
+253100             06  CNTL-TRANS-DAY-TIMES    OCCURS 3 TIMES.
+253200                 08  CNTL-TRANS-DAY-HR    PIC X(2).
+253300                 08  CNTL-TRANS-DAY-MN    PIC X(2).
+253400         04  CNTL-TRANS-TIME-INTERVAL.
+253500             06  CNTL-TRANS-INT-HR        PIC X(2).
+253600             06  CNTL-TRANS-INT-MN        PIC X(2).
+253700         04  CNTL-TRANS-NEXT-RUN-DATE-TIME.
+253800             06  CNTL-TRANS-NEXT-RUN-DATE.
+253900                 08  CNTL-TRANS-NEXT-YR   PIC X(2).
+254000                 08  CNTL-TRANS-NEXT-MO   PIC X(2).
+254100                 08  CNTL-TRANS-NEXT-DY   PIC X(2).
+254200             06  CNTL-TRANS-NEXT-RUN-TIME.
+254300                 08  CNTL-TRANS-NEXT-HR   PIC X(2).
+254400                 08  CNTL-TRANS-NEXT-MN   PIC X(2).
+254500         04  CNTL-TRANS-SUSPEND-DATE-TIME.
+254600             06  CNTL-TRANS-SUSPEND-DATE.
+254700                 08  CNTL-TRANS-SUSP-YR   PIC X(2).
+254800                 08  CNTL-TRANS-SUSP-MO   PIC X(2).
+254900                 08  CNTL-TRANS-SUSP-DY   PIC X(2).
+255000             06  CNTL-TRANS-SUSPEND-TIME.
+255100                 08  CNTL-TRANS-SUSP-HR   PIC X(2).
+255200                 08  CNTL-TRANS-SUSP-MN   PIC X(2).
+255300         04  CNTL-TRANS-LAST-RUN-START.
+255400             06  CNTL-TRANS-LAST-START-DATE.
+255500                 08  CNTL-TRANS-START-YR  PIC X(2).
+255600                 08  CNTL-TRANS-START-MO  PIC X(2).
+255700                 08  CNTL-TRANS-START-DY  PIC X(2).
+255800             06  CNTL-TRANS-LAST-START-TIME.
+255900                 08  CNTL-TRANS-START-HR  PIC X(2).
+256000                 08  CNTL-TRANS-START-MN  PIC X(2).
+256100         04  CNTL-TRANS-LAST-RUN-FINISH.
+256200             06  CNTL-TRANS-LAST-FINISH-DATE.
+256300                 08  CNTL-TRANS-FINISH-YR PIC X(2).
+256400                 08  CNTL-TRANS-FINISH-MO PIC X(2).
+256500                 08  CNTL-TRANS-FINISH-DY PIC X(2).
+256600             06  CNTL-TRANS-LAST-FINISH-TIME.
+256700                 08  CNTL-TRANS-FINISH-HR PIC X(2).
+256800                 08  CNTL-TRANS-FINISH-MN PIC X(2).
+256900         04  CNTL-TRANS-UPDATE-USER       PIC X(8).
+257000         04  CNTL-TRANS-UPDATE-DATE-TIME.
+257100             06  CNTL-TRANS-UPDATE-DATE   PIC X(6).
+257200             06  CNTL-TRANS-UPDATE-TIME   PIC X(4).
+257300         04  FILLER                       PIC X(72).
+257400*
+257500******************  CNTL-AREA-96 **************************
+257600*
+257700     02  CNTL-AREA-96 REDEFINES CNTL-AREA.
+257800         04  FILLER                PIC XX.
+257900         04  CNTL-DT-USERID        PIC X(08).
+258000         04  FILLER                PIC X(10).
+258100         04  CNTL-DT-DAYS-OFFSET   PIC 9(03).
+258200             88  CNTL-DT-USE-ALT-FIELD  VALUE 999.
+258300         04  CNTL-DT-HRMN-OFFSET.
+258400             05  CNTL-DT-HR-OFFSET PIC 9(02).
+258500             05  CNTL-DT-MN-OFFSET PIC 9(02).
+258600         04  CNTL-DT-ALT-DAYS-OFFSET
+258700             REDEFINES CNTL-DT-HRMN-OFFSET  PIC 9(4).
+258800         04  CNTL-DT-ADD-SUBTRACT  PIC X(01).
+258900             88  CNTL-DT-ADD           VALUE 'A'.
+259000             88  CNTL-DT-SUBTRACT      VALUE 'S'.
+259100         04  CNTL-DT-UPD-USER      PIC X(08).
+259200         04  CNTL-DT-UPD-DATE-TIME.
+259300             06  CNTL-DT-UPD-DATE  PIC X(06).
+259400             06  CNTL-DT-UPD-TIME  PIC X(06).
+259500         04  CNTL-DT-ABS-OFFSET    PIC 9(16).
+259600         04  FILLER                PIC X(192).
+259700**
+259800*
+259900******************  CNTL-AREA-97 **************************
+260000*
+260100     02  CNTL-AREA-97 REDEFINES CNTL-AREA.
+260200         04  FILLER                PIC XX.
+260300         04  CNTL-JCL-PROGRAM-ID   PIC X(8).
+260400         04  CNTL-JCL-SEQ          PIC XX.
+260500         04  FILLER                PIC X(8).
+260600         04  CNTL-JCL-DESC         PIC X(30).
+260700         04  CNTL-JCL-DATA         PIC X(72).
+260800         04  CNTL-JCL-TD-QUEUE     PIC X(4).
+260900         04  FILLER                PIC X(130).
+261000**
+261100******************  CNTL-AREA-98 **************************
+261200*
+261300     02  CNTL-AREA-98 REDEFINES CNTL-AREA.
+261400         04  FILLER                  PIC XX.
+261500         04  CNTL-HIST-FUNC-CODE     PIC XX.
+261600         04  FILLER                  PIC X(16).
+261700         04  CNTL-HIST-FUNC-DESC     PIC X(10).
+261800         04  CNTL-HIST-LAYOFF-NBR    PIC XX.
+261900         04  FILLER                  PIC X(224).
+262000**
+262100******************  CNTL-AREA-99 **************************
+262200*
+262300     02  CNTL-AREA-99 REDEFINES CNTL-AREA.
+262400         04  FILLER               PIC XX.
+262500         04  CNTL-LAYOFF-CODE     PIC XX.
+262600         04  FILLER               PIC X(16).
+262700         04  CNTL-LAYOFF-DESC     PIC X(10).
+262800         04  FILLER               PIC X(226).
+262900**
+263000******************  CNTL-AREA-A1 **************************
+263100*
+263200     02  CNTL-AREA-A1 REDEFINES CNTL-AREA.
+263300         04  FILLER               PIC X(002).
+263400         04  CNTL-A1-DIST         PIC X(002).
+263500         04  CNTL-A1-SUB-DIST     PIC X(002).
+263600         04  FILLER               PIC X(024).
+263700         04  CNTL-A1-ARRAY OCCURS 10.
+263800             06  CNTL-A1-SERVICE  PIC X(002).
+263900             06  CNTL-A1-TERM     PIC X(001).
+264000             06  CNTL-A1-MAX-24   PIC X(004).
+264100             06  CNTL-A1-REQ-REST PIC X(004).
+264200             06  CNTL-A1-RR-CONS  PIC X(001).
+264300             06  CNTL-A1-MAX-TOUR PIC X(004).
+264400             06  CNTL-A1-RD-YD    PIC X(001).
+264500         04  FILLER               PIC X(038).
+264600         04  CNTL-A1-LU-DATE      PIC X(006).
+264700         04  CNTL-A1-LU-TIME      PIC X(004).
+264800         04  CNTL-A1-LU-USERID    PIC X(008).
+264900**
+265000******************  CNTL-AREA-A2 **************************
+265100*
+265200     02  CNTL-AREA-A2 REDEFINES CNTL-AREA.
+265300         04  FILLER               PIC X(002).
+265400         04  CNTL-A2-DIST         PIC X(002).
+265500         04  CNTL-A2-SUB-DIST     PIC X(002).
+265600         04  FILLER               PIC X(024).
+265700         04  CNTL-A2-ARRAY OCCURS 10.
+265800             06  CNTL-A2-REQ-MTOD.
+265900                 08  CNTL-A2-REQ-MTOD-NUM PIC 9(004).
+266000             06  CNTL-A2-ADD-ARB          PIC X(001).
+266100             06  CNTL-A2-SHORT-CALL-FLAG  PIC X(001).
+266200                 88  CNTL-A2-SHORT-CALL-YES   VALUE 'Y'.
+266300                 88  CNTL-A2-SHORT-CALL-NO    VALUE 'N'.
+266400             06  FILLER           PIC X(011).
+266500         04  FILLER               PIC X(038).
+266600         04  CNTL-A2-LU-DATE      PIC X(006).
+266700         04  CNTL-A2-LU-TIME      PIC X(004).
+266800         04  CNTL-A2-LU-USERID    PIC X(008).
+266900**
+267000******************  CNTL-AREA-BB **************************
+267100*
+267200     02  CNTL-AREA-BB REDEFINES CNTL-AREA.
+267300         04  FILLER               PIC X(002).
+267400         04  CNTL-BB-SEQ          PIC 9(002).
+267500         04  FILLER               PIC X(016).
+267600         04  CNTL-ACTIVE-DDSD   OCCURS 59 TIMES.
+267700             06  CNTL-BB-DD       PIC X(002).
+267800             06  CNTL-BB-SD       PIC X(002).
+267900**
+268000******************  CNTL-AREA-BC **************************
+268100*
+268200     02  CNTL-AREA-BC REDEFINES CNTL-AREA.
+268300         04  FILLER                          PIC X(002).
+268400         04  CNTL-BC-REC-TYPE                PIC X(002).
+268500             88  CNTL-BC-RUN-REC                 VALUE '00'.
+268600             88  CNTL-BC-OT-REC                  VALUE '01'.
+268700             88  CNTL-BC-BT-REC                  VALUE '02'.
+268800             88  CNTL-BC-Z2-REC                  VALUE '03'.
+268900             88  CNTL-BC-EMP-REC                 VALUE '10'.
+269000         04  FILLER                          PIC X(016).
+269100         04  CNTL-BC-VARIABLE-AREA           PIC X(218).
+269200         04  CNTL-BC-RUN-AREA
+269300             REDEFINES CNTL-BC-VARIABLE-AREA.
+269400             06  FILLER                      PIC X(031).
+269500             06  CNTL-BC-RUN-DATE-TIME.
+269600                 08  CNTL-BC-RUN-DATE.
+269700                     10  CNTL-BC-RUN-CC      PIC X(002).
+269800                     10  CNTL-BC-RUN-YY      PIC X(002).
+269900                     10  CNTL-BC-RUN-MM      PIC X(002).
+270000                     10  CNTL-BC-RUN-DD      PIC X(002).
+270100                 08  CNTL-BC-RUN-TIME.
+270200                     10  CNTL-BC-RUN-HR      PIC X(002).
+270300                     10  CNTL-BC-RUN-MN      PIC X(002).
+270400             06  FILLER                      PIC X(012).
+270500             06  CNTL-BC-RUN-PP.
+270600                 08  CNTL-BC-RUN-PP-YR       PIC X(004).
+270700                 08  CNTL-BC-RUN-PP-NBR      PIC X(002).
+270800             06  CNTL-BC-PREV-RUN-DATE-TIME.
+270900                 08  CNTL-BC-PREV-RUN-DATE.
+271000                     10  CNTL-BC-PREV-RUN-CC PIC X(002).
+271100                     10  CNTL-BC-PREV-RUN-YY PIC X(002).
+271200                     10  CNTL-BC-PREV-RUN-MM PIC X(002).
+271300                     10  CNTL-BC-PREV-RUN-DD PIC X(002).
+271400                 08  CNTL-BC-PREV-RUN-TIME.
+271500                     10  CNTL-BC-PREV-RUN-HR PIC X(002).
+271600                     10  CNTL-BC-PREV-RUN-MN PIC X(002).
+271700             06  CNTL-BC-PREV-RUN-PP.
+271800                 08  CNTL-BC-PREV-RUN-PP-YR  PIC X(004).
+271900                 08  CNTL-BC-PREV-RUN-PP-NBR PIC X(002).
+272000             06  FILLER                      PIC X(139).
+272100         04  CNTL-BC-FUNCTION-AREA
+272200             REDEFINES CNTL-BC-VARIABLE-AREA.
+272300             06  CNTL-BC-DESC                PIC X(030).
+272400             06  CNTL-BC-SKIP-FLAG           PIC X(001).
+272500                 88  CNTL-BC-SKIP-YES            VALUE 'Y'.
+272600             06  CNTL-BC-STARTED-DATE-TIME.
+272700                 08  CNTL-BC-STARTED-DATE.
+272800                     10  CNTL-BC-STARTED-CC  PIC X(002).
+272900                     10  CNTL-BC-STARTED-YY  PIC X(002).
+273000                     10  CNTL-BC-STARTED-MM  PIC X(002).
+273100                     10  CNTL-BC-STARTED-DD  PIC X(002).
+273200                 08  CNTL-BC-STARTED-TIME.
+273300                     10  CNTL-BC-STARTED-HR  PIC X(002).
+273400                     10  CNTL-BC-STARTED-MN  PIC X(002).
+273500             06  CNTL-BC-ENDED-DATE-TIME.
+273600                 08  CNTL-BC-ENDED-DATE.
+273700                     10  CNTL-BC-ENDED-CC    PIC X(002).
+273800                     10  CNTL-BC-ENDED-YY    PIC X(002).
+273900                     10  CNTL-BC-ENDED-MM    PIC X(002).
+274000                     10  CNTL-BC-ENDED-DD    PIC X(002).
+274100                 08  CNTL-BC-ENDED-TIME.
+274200                     10  CNTL-BC-ENDED-HR    PIC X(002).
+274300                     10  CNTL-BC-ENDED-MN    PIC X(002).
+274400             06  CNTL-BC-PAY-PERIOD.
+274500                 08  CNTL-BC-PP-YEAR         PIC X(004).
+274600                 08  CNTL-BC-PP-NBR          PIC X(002).
+274700             06  CNTL-BC-CREATED-COUNT       PIC 9(007).
+274800             06  FILLER                      PIC X(150).
+274900         04  CNTL-BC-EMPLOYEE-AREA
+275000             REDEFINES CNTL-BC-VARIABLE-AREA.
+275100             06  CNTL-BC-EMP-ARRAY           OCCURS 10 TIMES.
+275200                 08  CNTL-BC-EMP-NBR         PIC X(009).
+275300             06  FILLER                      PIC X(128).
+275400         04  CNTL-BC-LASTUPDATE-USER         PIC X(008).
+275500         04  CNTL-BC-LASTUPDATE-DATE         PIC X(006).
+275600         04  CNTL-BC-LASTUPDATE-TIME         PIC X(004).
+275700**
+275800******************  CNTL-AREA-BR **************************
+275900*
+276000     02  CNTL-AREA-BR REDEFINES CNTL-AREA.
+276100         04  FILLER               PIC X(020).
+276200         04  CNTL-BROAD-STAT      PIC X(001).
+276300             88  CNTL-BROAD-ON        VALUE 'Y'.
+276400             88  CNTL-BROAD-OFF       VALUE 'N'.
+276500         04  FILLER               PIC X(235).
+276600**
+276700******************  CNTL-AREA-CB **************************
+276800*
+276900     02  CNTL-AREA-CB REDEFINES CNTL-AREA.
+277000         04  FILLER               PIC X(020).
+277100         04  CNTL-CALLBACK-START-PARM
+277200                                  PIC X(003).
+277300         04  FILLER               PIC X(233).
+277400**
+277500******************  CNTL-AREA-CO **************************
+277600*
+277700     02  CNTL-AREA-CO REDEFINES CNTL-AREA.
+277800         04  FILLER                   PIC X(020).
+277900         04  CNTL-CO-CMPNY-CODE-ARRAY OCCURS 12.
+278000             06  CNTL-CO-CMPNY-CODE   PIC X(001).
+278100         04  FILLER                   PIC X(224).
+278200**
+278300******************  CNTL-AREA-DP **************************
+278400*
+278500     02  CNTL-AREA-DP REDEFINES CNTL-AREA.
+278600         04  FILLER               PIC X(002).
+278700         04  CNTL-DP-USERID       PIC X(008).
+278800         04  FILLER               PIC X(246).
+278900**
+279000******************  CNTL-AREA-FE **************************
+279100*
+279200     02  CNTL-AREA-FE REDEFINES CNTL-AREA.
+279300         04  FILLER               PIC X(002).
+279400         04  CNTL-FIELD-USERID    PIC X(008).
+279500         04  FILLER               PIC X(010).
+279600         04  CNTL-FIELD-EMP-NBR   PIC X(009).
+279700         04  FILLER               PIC X(227).
+279800**
+279900******************  CNTL-AREA-FM **************************MFS
+280000*
+280100     02  CNTL-AREA-FM REDEFINES CNTL-AREA.
+280200         04  FILLER               PIC X(02).
+280300         04  CNTL-MAINT-FILE-NAME PIC X(08).
+280400         04  FILLER               PIC X(10).
+280500         04  CNTL-MAINT-RLGTH     PIC 9(04).
+280600         04  CNTL-MAINT-KLGTH     PIC 9(04).
+280700         04  CNTL-MAINT-OFFSET    PIC 9(04).
+280800*  LAST 18 BYTES OF FILLER RESERVED FOR UPDATE DATE/TIME/USERID
+280900         04  FILLER               PIC X(224).
+281000**
+281100******************  CNTL-AREA-OK **************************
+281200*
+281300     02  CNTL-AREA-OK REDEFINES CNTL-AREA.
+281400         04  FILLER                PIC X(02).
+281500         04  CNTL-PST-USERID       PIC X(08).
+281600         04  FILLER                PIC X(246).
+281700**
+281800******************  CNTL-AREA-QU **************************
+281900*
+282000     02  CNTL-AREA-QU REDEFINES CNTL-AREA.
+282100         04  FILLER                             PIC X(002).
+282200         04  FILLER                             PIC X(018).
+282300         04  CNTL-QU-EXPIRATION-ARRAY OCCURS 10.
+282400             06  CNTL-QU-EXPIRATION-THRESH      PIC X(003).
+282500         04  CNTL-QU-NOTIFICATION-MAX           PIC 9(002).
+282600         04  FILLER                             PIC X(204).
+282700**
+282800******************  CNTL-AREA-JT **************************
+282900*
+283000     02  CNTL-AREA-JT REDEFINES CNTL-AREA.
+283100         04  FILLER                             PIC X(002).
+283200         04  CNTL-JT-SERVICE-WORKED             PIC X(002).
+283300         04  FILLER                             PIC X(016).
+283400         04  CNTL-JT-JOB-TYPE-TABLE OCCURS 50.
+283500             06  CNTL-JT-JOB-TYPE               PIC X(002).
+283600         04  FILLER                             PIC X(136).
+283700**
+283800******************  CNTL-AREA-MQ **************************
+283900*
+284000     02  CNTL-AREA-MQ REDEFINES CNTL-AREA.
+284100         04  FILLER                             PIC X(025).
+284200         04  CNTL-MQ-CALL-TO-SVC-PRI            PIC X(001).
+284300         04  FILLER                             PIC X(008).
+284400         04  CNTL-MQ-CALLBACK-PRI               PIC X(001).
+284500         04  FILLER                             PIC X(012).
+284600         04  CNTL-MQ-PHN-TST-WAKE-UP-PRI        PIC X(001).
+284700         04  FILLER                             PIC X(006).
+284800         04  CNTL-MQ-NTFY-PRI                   PIC X(001).
+284900         04  FILLER                             PIC X(201).
+285000**
+285100******************  CNTL-AREA-TC **************************
+285200*
+285300     02  CNTL-AREA-TC REDEFINES CNTL-AREA.
+285400         04  FILLER                     PIC X(20).
+285500         04  CNTL-TC-LAST-DATE-CENT.
+285600             06  CNTL-TC-LAST-CC        PIC X(02).
+285700             06  CNTL-TC-LAST-DATE      PIC X(06).
+285800         04  CNTL-TC-LAST-TZ            PIC X(01).
+285900             88  CNTL-TC-ATLANTIC               VALUE 'A'.
+286000             88  CNTL-TC-EASTERN                VALUE 'E'.
+286100             88  CNTL-TC-CENTRAL                VALUE 'C'.
+286200             88  CNTL-TC-MOUNTAIN               VALUE 'M'.
+286300             88  CNTL-TC-PACIFIC                VALUE 'P'.
+286400         04  FILLER                     PIC X(227).
+286500**
+286600******************  CNTL-AREA-TI **************************
+286700*
+286800     02  CNTL-AREA-TI REDEFINES CNTL-AREA.
+286900         04  FILLER                     PIC X(20).
+287000         04  CNTL-TIPS-ACTIVE-FL        PIC X(01).
+287100             88  CNTL-TIPS-ACTIVE       VALUE 'Y'.
+287200         04  FILLER               PIC X(235).
+287300**
+287400******************  CNTL-AREA-TO **************************
+287500*
+287600     02  CNTL-AREA-TO REDEFINES CNTL-AREA.
+287700         04  FILLER                PIC X(02).
+287800         04  CNTL-TO-USERID        PIC X(08).
+287900         04  FILLER                PIC X(246).
+288000**
+288100******************  CNTL-AREA-TT **************************
+288200*
+288300     02  CNTL-AREA-TT REDEFINES CNTL-AREA.
+288400         04  FILLER                     PIC X(20).
+288500         04  CNTL-TOPC-MAX-TIME         PIC X(03).
+288600         04  CNTL-TOPC-MAX-TIME-NUM REDEFINES
+288700             CNTL-TOPC-MAX-TIME         PIC 9(03).
+288800         04  FILLER                     PIC X(233).
+288900**
+289000******************  CNTL-AREA-T1 **************************
+289100*
+289200     02  CNTL-AREA-T1 REDEFINES CNTL-AREA.
+289300         04  FILLER                PIC X(20).
+289400         04  FILLER                PIC X(17).
+289500         04  CNTL-T1-SYSID         PIC X(04).
+289600         04  FILLER                PIC X(01).
+289700         04  FILLER                PIC X(20).
+289800         04  CNTL-T1-PROCNAME      PIC X(04).
+289900         04  FILLER                PIC X(33).
+290000         04  FILLER                PIC X(21).
+290100         04  CNTL-T1-PAY-PERIOD    PIC X(01).
+290200             88  CNTL-T1-NO-PAY-PER-CHK   VALUE 'Y'.
+290300         04  FILLER                PIC X(135).
+290400*
+290500******************  CNTL-AREA-VC **************************
+290600*
+290700     02  CNTL-AREA-VC REDEFINES CNTL-AREA.
+290800         04  FILLER               PIC X(020).
+290900         04  CNTL-IVROUT-TIMES1     OCCURS 7 TIMES.
+291000             10 CNTL-IVROUT-FROM1    PIC X(04).
+291100             10 CNTL-IVROUT-TO1      PIC X(04).
+291200         04  CNTL-IVROUT-TIMES2     OCCURS 7 TIMES.
+291300             10 CNTL-IVROUT-FROM2    PIC X(04).
+291400             10 CNTL-IVROUT-TO2      PIC X(04).
+291500         04  FILLER                  PIC X(124).
+291600*
+291700******************  CNTL-AREA-VR **************************
+291800*
+291900     02  CNTL-AREA-VR REDEFINES CNTL-AREA.
+292000         04  FILLER               PIC X(020).
+292100         04  CNTL-VRU-CONF        PIC X(007).
+292200         04  CNTL-VRU-CONF-NUM REDEFINES
+292300             CNTL-VRU-CONF        PIC 9(007).
+292400         04  FILLER               PIC X(229).
+292500**
+292600******************  CNTL-AREA-XX **************************
+292700*
+292800     02  CNTL-AREA-XX REDEFINES CNTL-AREA.
+292900         04  FILLER               PIC X(20).
+293000         04  CNTL-LOCK-INDICATOR  PIC X(01).
+293100             88  CNTL-LOCK-ON     VALUE 'Y'.
+293200         04  FILLER               PIC X(235).
+293300**
+293400******************  CNTL-AREA-Z1 **************************
+293500*  THIS RECORD IS MAINTAINED FROM THE "PATCH A FILE" SCREEN
+293600*  ONLY (TRANID = MAK1).  THIS RECORD IS FOR DIFFERENT
+293700*  EMAIL TRANSIENT DATA QUEUE IDS WITHIN THE DIFFERENT
+293800*  CICS REGIONS.
+293900*
+294000     02  CNTL-AREA-Z1 REDEFINES CNTL-AREA.
+294100         04  FILLER               PIC X(20).
+294200         04  CNTL-EMAIL-TD-QUEUE  PIC X(04).
+294300         04  FILLER               PIC X(232).
+294400**
+294500******************  CNTL-AREA-Z4 **************************
+294600*
+294700     02  CNTL-AREA-Z4 REDEFINES CNTL-AREA.
+294800         04  FILLER               PIC X(20).
+294900         04  CNTL-OLD-NEW-VACATION-FLAG
+295000                                  PIC X(01).
+295100             88  CNTL-USE-OLD-VAC-SCREEN    VALUE 'Y'.
+295200         04  FILLER               PIC X(235).
+295300**
+295400******************  CNTL-AREA-Z8 **************************
+295500*  THIS RECORD IS MAINTAINED FROM THE QUALIFICATION CODE
+295600*  CONTROL TABLE UPDATE.  QUAL CODES ASSOCIATED WITH TRAINING
+295700*  ONLY ARE MAINTAINED HERE FOR QUALIFICATION ACTIVATION AT
+295800*  TIE-UP TIME.
+295900*
+296000     02  CNTL-AREA-Z8 REDEFINES CNTL-AREA.
+296100         04  FILLER               PIC X(002).
+296200         04  CNTL-Z8-QUAL-OJT     PIC X(004).
+296300         04  FILLER               PIC X(250).
+296400**
+296500******************  CNTL-AREA-Z9 **************************
+296600*
+296700     02  CNTL-AREA-Z9 REDEFINES CNTL-AREA.
+296800         04  FILLER               PIC X(020).
+296900         04  CNTL-CIRC-SEQ        PIC X(006).
+297000         04  CNTL-CIRC-SEQ-NUM REDEFINES
+297100             CNTL-CIRC-SEQ        PIC 9(006).
+297200         04  FILLER               PIC X(230).
+297300**
+297400******************  CNTL-AREA-ZA **************************
+297500*
+297600     02  CNTL-AREA-ZA REDEFINES CNTL-AREA.
+297700         04  FILLER               PIC X(020).
+297800         04  CNTL-BULL-ID-SEQ     PIC X(006).
+297900         04  CNTL-BULL-ID-SEQ-NUM REDEFINES
+298000             CNTL-BULL-ID-SEQ     PIC 9(006).
+298100         04  FILLER               PIC X(230).
+298200**
+298300*CNAC33-B
+298400******************  CNTL-AREA-ZC **************************
+298500*
+298600     02  CNTL-AREA-ZC REDEFINES CNTL-AREA.
+298700         04  FILLER                         PIC X(002).
+298800         04  CNTL-ZC-IVR-CRAFT-PRIORTY-PROF PIC X(008).
+298900         04  CNTL-ZC-EXPIRATION-DATE        PIC X(006).
+299000         04  FILLER                         PIC X(004).
+299100         04  CNTL-ZC-CRAFT-PRIORTY-ARRAY OCCURS 30 TIMES.
+299200             06  CNTL-ZC-CRAFT-PRIORTY      PIC X(002).
+299300         04  CNTL-ZC-TIE-BRK-ARRAY  OCCURS 12 TIMES.
+299400             06  CNTL-ZC-TIE-BRK-TYPE       PIC X(001).
+299500             06  CNTL-ZC-TIE-BRK-QUAL-ASGN  PIC X(006).
+299600         04  CNTL-ZC-VAC-PRTY-ARRAY OCCURS 03 TIMES.
+299700             06  CNTL-ZC-VAC-PRTY-TYPE      PIC X(001).
+299800         04  FILLER                         PIC X(071).
+299900         04  CNTL-ZC-LASTUPDATE-DATE        PIC X(006).
+300000         04  CNTL-ZC-LASTUPDATE-TIME        PIC X(004).
+300100         04  CNTL-ZC-LASTUPDATE-USER        PIC X(008).
+300200**
+300300*CNAC33-E
+300400******************  CNTL-AREA-ZF **************************
+300500*
+300600     02  CNTL-AREA-ZF REDEFINES CNTL-AREA.
+300700         04  FILLER               PIC X(020).
+300800         04  CNTL-FRA-TRN-SEQ     PIC X(007).
+300900         04  CNTL-FRA-TRN-SEQ-NUM REDEFINES
+301000             CNTL-FRA-TRN-SEQ     PIC 9(007).
+301100         04  FILLER               PIC X(229).
+301200**
+301300******************  CNTL-AREA-P1 **************************
+301400*
+301500     02  CNTL-AREA-P1 REDEFINES CNTL-AREA.
+301600         04  FILLER                    PIC X(002).
+301700         04  CNTL-PREP-DIST            PIC X(002).
+301800         04  CNTL-PREP-SUB-DIST        PIC X(002).
+301900         04  FILLER                    PIC X(014).
+302000         04  CNTL-PREP-BLE-ROSTER      PIC X(008).
+302100         04  CNTL-PREP-R-UTU-ROSTER    PIC X(008).
+302200         04  CNTL-PREP-Y-UTU-ROSTER    PIC X(008).
+302300         04  CNTL-PREP-LASTUPDATE-DATE PIC X(006).
+302400         04  CNTL-PREP-LASTUPDATE-TIME PIC X(004).
+302500         04  CNTL-PREP-LASTUPDATE-USER PIC X(008).
+302600         04  FILLER                    PIC X(194).
+302700**
+302800******************  CNTL-AREA-HS **************************
+302900*
+303000     02  CNTL-AREA-HS REDEFINES CNTL-AREA.
+303100         04  FILLER                    PIC X(020).
+303200         04  CNTL-HS-US-ACTIVATE-FL    PIC X(001).
+303300         04  CNTL-HS-STAND-STARTS      PIC X(002).
+303400         04  CNTL-HS-STAND-HOURS-OFF   PIC X(002).
+303500         04  CNTL-HS-ALTER-STARTS      PIC X(002).
+303600         04  CNTL-HS-ALTER-HOURS-OFF   PIC X(002).
+303700         04  CNTL-HS-TOTAL-HOURS       PIC X(003).
+303800         04  CNTL-HS-LIMBO-HOURS       PIC X(003).
+303900         04  CNTL-HS-090715-RESET-FL   PIC X(001).
+304000             88  CNTL-HS-090715-RESET      VALUE 'R'.
+304100         04  FILLER                    PIC X(220).
+304200**
+304300******************  CNTL-AREA-IB **************************
+304400*
+304500     02  CNTL-AREA-IB REDEFINES CNTL-AREA.
+304600         04  FILLER                    PIC X(020).
+304700         04  CNTL-IB-HRS-B4-DLVRY      PIC X(003).
+304800         04  CNTL-IB-HRS-BEFORE-DLVRY REDEFINES
+304900             CNTL-IB-HRS-B4-DLVRY      PIC 9(003).
+305000         04  FILLER                    PIC X(233).
+305100*CNC0390A-BEG
+305200**
+305300******************  CNTL-AREA-AS **************************
+305400*
+305500     02  CNTL-AREA-AS REDEFINES CNTL-AREA.
+305600         04  FILLER                    PIC X(02).
+305700         04  CNTL-AS-PROFILE           PIC X(08).
+305800         04  FILLER                    PIC X(10).
+305900         04  CNTL-AS-DESCRIPTION       PIC X(40).
+306000         04  CNTL-AS-SUB-DIST.
+306100             06  CNTL-AS-SDIST-ARRAY OCCURS 10 TIMES.
+306200                 08  CNTL-AS-DIST      PIC X(02).
+306300                 08  CNTL-AS-SDIST     PIC X(02).
+306400         04  CNTL-AS-LAST-UPD-DTTM.
+306500             06  CNTL-AS-LAST-UPD-DT   PIC X(06).
+306600             06  CNTL-AS-LAST-UPD-TM   PIC X(04).
+306700         04  CNTL-AS-LAST-UPD-BY       PIC X(08).
+306800         04  FILLER                    PIC X(138).
+306900**
+307000******************  CNTL-AREA-VW **************************
+307100*
+307200     02  CNTL-AREA-VW REDEFINES CNTL-AREA.
+307300         04  FILLER                    PIC X(020).
+307400         04  FILLER                    PIC X(010).
+307500         04  CNTL-VW-POOL-PAST         PIC X(004).
+307600         04  FILLER                    PIC X(014).
+307700         04  CNTL-VW-POOL-FUTURE       PIC X(004).
+307800         04  FILLER                    PIC X(057).
+307900         04  CNTL-VW-LOCAL-PAST        PIC X(004).
+308000         04  FILLER                    PIC X(014).
+308100         04  CNTL-VW-LOCAL-FUTURE      PIC X(004).
+308200         04  FILLER                    PIC X(057).
+308300         04  CNTL-VW-YARD-PAST         PIC X(004).
+308400         04  FILLER                    PIC X(014).
+308500         04  CNTL-VW-YARD-FUTURE       PIC X(004).
+308600         04  FILLER                    PIC X(046).
+308700*CNC0390A-END
+308800*KXB - BEG
+308900******************  CNTL-AREA-FR **************************
+309000*
+309100     02  CNTL-AREA-FR REDEFINES CNTL-AREA.
+309200         04  FILLER                PIC X(02).
+309300         04  CNTL-FR-USERID        PIC X(08).
+309400         04  FILLER                PIC X(246).
+309500*KXB - END
+309600******************  CNTL-AREA-ZZ **************************
+309700*
+309800     02  CNTL-AREA-ZZ REDEFINES CNTL-AREA.
+309900         04  FILLER                    PIC X(020).
+310000         04  DIST-TYPE-REC1            PIC X(002).
+310100         04  SUB-DIST-TYPE-REC1        PIC X(002).
+310200         04  FILLER                    PIC X(001).
+310300         04  DIST-TYPE-REC2            PIC X(002).
+310400         04  SUB-DIST-TYPE-REC2        PIC X(002).
+310500         04  FILLER                    PIC X(001).
+310600         04  DIST-TYPE-REC3            PIC X(002).
+310700         04  SUB-DIST-TYPE-REC3        PIC X(002).
+311400         04  FILLER                    PIC X(001).
+311500         04  ZZ-EMP-NBR1               PIC X(009).
+311600         04  FILLER                    PIC X(001).
+311700         04  ZZ-EMP-NBR2               PIC X(009).
+311600         04  FILLER                    PIC X(202).

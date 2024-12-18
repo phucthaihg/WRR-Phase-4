@@ -1,0 +1,6154 @@
+000100 IDENTIFICATION DIVISION.
+000200 PROGRAM-ID.  CNP15X.
+000300*****************************************************************
+000400*                   UFP MAINTENANCE PROGRAM
+000500*****************************************************************
+000600*  DATE   INITIAL  LOG#   DESCRIPTION
+000700*-------- ------- ------  ---------------------------------------
+000800*11/05/90   ERW           CICS CONVERSION.
+000900*08/04/92   MOO     N/A   ADDED EDIT TO P4010 TO NOT ALLOW TEMP
+001000*                         TURN TO BE CUT IF STILL WORKING
+001100*09/23/92   ERW     N/A   CHANGED BROWSE BY POSITION TO GTEQ READ.
+001200*08/08/94   MMM     N/A   ADDED VARIABLE BROWSE(PF10).
+001300*01/19/94   GJK           CONVERT EMP-PERS-REST TO CORRECT TIME
+001400*01/15/96   PLS   CNC0111 DISPLAY ET AND TT TURNS
+001500*01/16/96   JES   CNC0109 ALLOW MARRIED TURNS TO BE MOVED TO
+001600*                            ANOTHER BOARD (FUNCTION=M).
+001700*03/09/96   SRP  BUG-C267 DISPLAY SIGNIFICANT 0'S IN EMP PERS REST
+001800*                         AND MTOD FIELDS.
+001900*04/03/98   AMF           ADDED HELP LOGIC.
+002000*04/08/98   GBJ    Y2K    REMOVE WRITE TO HISTORY AND
+002100*                         REPLACE IT WITH A CALL TO P943.
+002200*12/03/98   GBJ    Y2K    YEAR 2000 SWEEP.
+002300*02/24/99   NJB           UFP ZAP LOGIC AND DISPLAY ALL ON BOARD
+002400*                         ON 12/31/99 AND 01/01/00
+002500*04/23/99   AJK  CNC0228  ADDED SNAPSHOT LOGIC.
+002600*11/11/98   GBJ    Y2K    PREVENT LOOPING IN P1020 WHEN DATE
+002700*                         12/31/99 OR 01/01/00
+002800*12/11/99   MOO   CNC0183 ADD CHECK FOR MTOR & MTOY.
+002900*03/23/00   AJK   CNC0275 ADD MINE TURN LOGIC.
+003000*10/12/00   AJK   CNC0319 UFP MOVE TURN ENHANCEMENT
+003100*11/30/00   PLS   CNC0252 CIRCADIAN POOL SCHEDULES
+003200*10/02/01   AJK           SCHEDULED POOLS - IGNORE 'OVERLAID'
+003300*                         SCHEDULES.
+003400*10/04/04   KJS  CNC0386A ADDED DAY ASSOCIATED WITH PERSONAL REST
+003410*07/28/05   AJK  C616     CORRECT CALL ORDER TIE BREAK LOGIC TO
+003420*                         SORT BY BOARD DATE/TIME INSTEAD OF TURN
+003430*                         ID.
+003431*01/03/12   BXS  CNC0510  DO NOT SET NOT-FROM-CURRENT-CYCLE WHEN
+003432*                         SCHEDULE WINDOW STARTS ON THE FIRST DAY
+003433*                         OF THE NEXT BIDPACK SCHEDULE CYCLE.
+003434*07/14/14   MFO  CNC0556  ADD REASON CODE
+003435*09/29/14   JES  CNC0499  ALLOW MARRIED TURNS TO "TRANSFER" WHEN
+003436*                         ENROUTE.
+003437*03/30/15   MFO  CNC0564A BIDPACK TIEBREAKERS
+003438*06/19/15   MFO  CNC0564A EDIT BIDPACK DISPLAY TO FACTOR LEAD TIME
+003439*07/13/15   MFO  C1088    DUPLICATE TURNS PRESENTED IF SCHEDULED
+003440*                         DAILY.
+003441*11/12/15   MFO  C1106    BIDPACK POOL CALL ORDER MISSING MTOD.
+003442*04/15/16   RXB  CNC0499-4 POPULATE TURN/POSITION ON POOL MAINTAN-
+003443*                          ANCE FOR BIDPACK SCHEDULE WHEN MARRIED
+003444*                          TURNS ARE ON.
+005300*04/02/23   RPV CNC0600   WRR PHASE 2 CHANGES
+009000*08/16/24   RJA  CNLD-309 MTOY AND MTOR ARE OBSOLETE.
+003445*****************************************************************
+003446 ENVIRONMENT DIVISION.
+003447 CONFIGURATION SECTION.
+003448 SOURCE-COMPUTER.  IBM-9370.
+003449 OBJECT-COMPUTER.  IBM-9370.
+003450 DATA DIVISION.
+003451
+003452*================================================================*
+003453 WORKING-STORAGE SECTION.
+003454*================================================================*
+003455
+003456 01  FILLER                      PIC X(10)   VALUE 'PGM15X W/S'.
+003457*01  WS-ABSTIME                  PIC S9(15)  COMP-3 VALUE +0.
+003458 01  P15X-COMM-LGTH              PIC S9(4)   COMP   VALUE +1145.
+003459
+003460 01  WS-SUBSCRIPTS.
+003470     05  I                             PIC 999 VALUE ZERO.
+003480     05  J                             PIC 999 VALUE ZERO.
+003490     05  K                             PIC 999 VALUE ZERO.
+003500     05  S1                            PIC 999 VALUE ZERO.
+003600     05  S2                            PIC 999 VALUE ZERO.
+003700     05  S3                            PIC 999 VALUE ZERO.
+003800     05  S4                            PIC 999 VALUE ZERO.
+003900     05  S5                            PIC 999 VALUE ZERO.
+004000     05  S6                            PIC 999 VALUE ZERO.
+004100     05  CRAFT-SUB-INCREMENT           PIC 999 VALUE ZERO.
+004200     05  CRAFT-ARRAY-SUB               PIC 999 VALUE ZERO.
+004300     05  CC-ARRAY-SUB                  PIC 999 VALUE ZERO.
+004400     05  CRAFT-ARRAY-MAX               PIC 999 VALUE 8.
+004500     05  ARRAY-SUB                     PIC 999 VALUE ZERO.
+004600     05  ARRAY-MAX                     PIC 999 VALUE 21.
+004700*CNC0510 05  COT-ARRAY-MAX                 PIC 999 VALUE 28.
+004800     05  COT-ARRAY-MAX                 PIC 999 VALUE 98.
+004900     05  GROUP-MAX                     PIC 999 VALUE ZERO.
+005000
+005100 01  WS-CRAFT-AREA.
+005200     05  WS-COMPARE-CRAFT              PIC XX.
+005300     05  WS-CRAFT-ARRAY OCCURS 8 TIMES.
+005400         10  WS-CRAFT-CODE             PIC XX.
+005500         10  WS-ASSOC-CRAFT            PIC XX.
+005600         10  WS-CRAFT-STATUS           PIC X.
+005700             88  OPTIONAL-CRAFT            VALUE '1'.
+005800         10  WS-CRAFT-SUB              PIC 999.
+005900         10  WS-CRAFT-MAX              PIC 999.
+006000         10  WS-CRAFT-SCROLL-KEY.
+006100             88  WS-CRAFT-DONE             VALUE 'DONE        '.
+006200             12  WS-CRAFT-SCROLL-DIST     PIC X(02) VALUE SPACES.
+006300             12  WS-CRAFT-SCROLL-SUB-DIST PIC X(02) VALUE SPACES.
+006400             12  WS-CRAFT-SCROLL-POOL     PIC X(02) VALUE SPACES.
+006500             12  WS-CRAFT-SCROLL-TURN     PIC X(04) VALUE SPACES.
+006600             12  WS-CRAFT-SCROLL-CC       PIC X(02) VALUE SPACES.
+006700
+006800 01  WS-CALL-ORDER-CRAFT-AREA.
+006900     05  WS-CO-CRAFT-ARRAY OCCURS 8 TIMES.
+007000*CNC0510 10  WS-CO-TURN-ARRAY OCCURS 28 TIMES.
+007100         10  WS-CO-TURN-ARRAY OCCURS 98 TIMES.
+007200             15  WS-COT-KEY.
+007300                 20  WS-COT-START-DATE-TIME.
+007400                     25  WS-COT-START-DATE     PIC X(8) VALUE ' '.
+007500                     25  WS-COT-START-TIME     PIC X(4) VALUE ' '.
+007600                 20  WS-COT-CALL-ORDER         PIC X(1) VALUE ' '.
+007700                 20  WS-COT-BOARD-DATE-TIME-TIE.
+007800                     25  WS-COT-BOARD-CENT     PIC X(2) VALUE ' '.
+007900                     25  WS-COT-BOARD-DATE-TIME.
+008000                         30  WS-COT-BOARD-DATE PIC X(6) VALUE ' '.
+008100                         30  WS-COT-BOARD-TIME PIC X(4) VALUE ' '.
+008200                     25  WS-COT-BOARD-TIE      PIC X(4) VALUE ' '.
+008300             15  WS-COT-SCHEDKEY1             PIC X(36) VALUE ' '.
+008400*CNC0510
+008500             15  WS-COT-ASGN                  PIC X(08) VALUE ' '.
+008600             15  WS-COT-END-DATE-TIME.
+008700                 20  WS-COT-END-DATE          PIC X(8) VALUE ' '.
+008800                 20  WS-COT-END-TIME          PIC X(4) VALUE ' '.
+008801*CNC0564A - BEG
+008802             15  WS-TURN-PROTECTED-FL         PIC X    VALUE ' '.
+008803                 88  WS-TURN-PROTECTED                 VALUE ' '.
+008804                 88  WS-TURN-PROTECTED-NO              VALUE '1'.
+008805*01  WS-CALL-ORDER-SAVE-AREA           PIC X(65) VALUE SPACES.
+008806 01  WS-CALL-ORDER-SAVE-AREA           PIC X(86) VALUE SPACES.
+008807*06/19/15 - BEG
+008808 01  WS-POOL-HOME-LEAD-TIME            PIC 9999  VALUE ZEROS.
+008809 01  WS-SCHED-START-ML-DATE-TIME.
+008810     02 WS-SCHED-START-ML-CE           PIC X(002) VALUE SPACES.
+008820     02 WS-SCHED-START-ML-DATE         PIC X(006) VALUE SPACES.
+008821     02 WS-SCHED-START-ML-TIME         PIC X(004) VALUE SPACES.
+008822 01  WS-SCHED-END-ML-DATE-TIME.
+008823     02 WS-SCHED-END-ML-CE             PIC X(002) VALUE SPACES.
+008824     02 WS-SCHED-END-ML-DATE           PIC X(006) VALUE SPACES.
+008825     02 WS-SCHED-END-ML-TIME           PIC X(004) VALUE SPACES.
+008826*06/19/15 - END
+008827*06/22/15 - BEG
+008828 01  WS-UFP-POS-DATE-TIME-TZ           PIC X(010) VALUE SPACES.
+008829*06/22/15 - END
+008830*CNC0564A - END
+008840
+008850 01  WS-FLAGS.
+008860     05  PROTECTION-IS-IN-EFFECT-FLAG  PIC X   VALUE '0'.
+008870         88  PROTECTION-IS-IN-EFFECT           VALUE '1'.
+008880     05  SCREEN-FLAG                   PIC X   VALUE '0'.
+008890         88  CONTINUE-SCREEN                   VALUE '0'.
+008900         88  CREATE-SCREEN                     VALUE '1'.
+009000         88  SEND-BUFFER                       VALUE '2'.
+009100     05  WS-FUNCTION                   PIC X   VALUE SPACE.
+009200         88  INQUIRY-REQ                       VALUE 'I'.
+009210         88  ADD-REQ                           VALUE 'A'.
+009220         88  CUT-REQ                           VALUE 'C'.
+009230         88  REPOSITION-REQ                    VALUE 'R'.
+009240         88  BLANK-REQ                         VALUE 'B'.
+009250         88  2NDBK-REQ                         VALUE '2'.
+009260         88  TRANSFER-REQ                      VALUE 'T'.
+009270         88  UFP-MOVE-REQ                      VALUE 'M'.
+009280         88  CALL-ORDER-REQ                    VALUE 'O'.
+009290         88  SCHEDULE-REQ                      VALUE 'S'.
+009300         88  FUNCTION-OK             VALUES 'I' 'A' 'C' 'R' 'B'
+009400                                            'O' 'S' '2' 'T' 'M'.
+009500     05  WS-BOARD                      PIC X  VALUE SPACE.
+009600         88  TURN-BOARD                       VALUE 'T'.
+009700         88  POSITION-BOARD                   VALUE '0' THRU '5'.
+009800         88  HOME-BOARD                       VALUE '0'.
+009900         88  AWAY-BOARD                       VALUE '1' THRU '5'.
+010000         88  BOARD-OK                         VALUE 'T'
+010100                                              '0' THRU '5'.
+010200     05  ERRORS-FOUND-CODE             PIC X   VALUE '0'.
+010300         88  ERRORS-FOUND                      VALUE '1'.
+010400     05  DONE-CODE                     PIC X   VALUE '0'.
+010500         88 NOT-DONE                           VALUE '0'.
+010600         88 DONE                               VALUE '1'.
+010700     05  DONE-CODE1                    PIC X   VALUE '0'.
+010800         88 NOT-DONE1                          VALUE '0'.
+010900         88 DONE1                              VALUE '1'.
+011000     05  SORT-DONE-FLAG                PIC X   VALUE 'N'.
+011100         88 SORT-NOT-DONE                      VALUE 'N'.
+011200         88 SORT-DONE                          VALUE 'Y'.
+011300     05  COT-DONE-FLAG                 PIC X   VALUE 'N'.
+011400         88 COT-NOT-DONE                       VALUE 'N'.
+011500         88 COT-DONE                           VALUE 'Y'.
+011600     05  ASGN-DONE-CODE                PIC X   VALUE '0'.
+011700         88 ASGN-DONE                          VALUE '1'.
+011800     05  PROT-DONE-CODE                PIC X   VALUE '0'.
+011900         88 PROT-DONE                          VALUE '1'.
+012000     05  SCHED-DONE-CODE               PIC X   VALUE '0'.
+012100         88 NOT-SCHED-DONE                     VALUE '0'.
+012200         88 SCHED-DONE                         VALUE '1'.
+012300     05  ASSOCIATED-TURN-FLAG          PIC 9   VALUE 0.
+012400         88  ASSOCIATED-TURN                   VALUE 1.
+012401*CNC0499-4-BEG
+012402         88  ASSOCIATED-TURN-NO                VALUE 0.
+012403     05  WS-MU-DONE-CODE               PIC X   VALUE '0'.
+012404         88 MU-NOT-DONE                        VALUE '0'.
+012405         88 MU-DONE                            VALUE '1'.
+012406     05  WS-MU-TURN-FLAG               PIC X   VALUE '0'.
+012407         88 NO-MU-TURN                         VALUE '0'.
+012408         88 MU-TURN-FOUND                      VALUE '1'.
+012409*CNC0499-4-END
+012410     05  SKIP-FLAG                     PIC X   VALUE SPACE.
+012420         88 SKIP-RECORD                        VALUE 'Y'.
+012430     05  EN-FI-MARRIED-FLAG            PIC X   VALUE SPACE.
+012440         88  EN-FI-MARRIED                     VALUE 'Y', '1'.
+012450         88  EN-SE-MARRIED                     VALUE '1'.
+012460     05  CO-BK-MARRIED-FLAG            PIC X   VALUE SPACE.
+012470         88  CO-BK-MARRIED                     VALUE 'Y'.
+012480     05  CO-B1-MARRIED-FLAG            PIC X   VALUE SPACE.
+012490         88  CO-B1-MARRIED                     VALUE '1'.
+012500     05  CO-B2-MARRIED-FLAG            PIC X   VALUE SPACE.
+012600         88  CO-B2-MARRIED                     VALUE '1'.
+012700     05  CO-BG-MARRIED-FLAG            PIC X   VALUE SPACE.
+012800         88  CO-BG-MARRIED                     VALUE '1'.
+012900     05  B1-B2-MARRIED-FLAG            PIC X   VALUE SPACE.
+013000         88  B1-B2-MARRIED                     VALUE 'Y'.
+013100     05  EN-ET-MARRIED-FLAG            PIC X   VALUE SPACE.
+013200         88  EN-ET-MARRIED                     VALUE 'Y'.
+013300     05  CO-TT-MARRIED-FLAG            PIC X   VALUE SPACE.
+013400         88  CO-TT-MARRIED                     VALUE 'Y'.
+013500     05  DONE-WITH-ASGN-CODE           PIC X   VALUE '0'.
+013600         88 DONE-WITH-ASGN                     VALUE '1'.
+013700     05  EN-ID-POOL-FLAG               PIC X   VALUE '0'.
+013800         88  EN-ID-POOL                        VALUE '1'.
+013900     05  TR-ID-POOL-FLAG               PIC X   VALUE '0'.
+014000         88  TR-ID-POOL                        VALUE '1'.
+014100     05  USER-SELECTED-CODE            PIC X   VALUE '0'.
+014200         88  NOTHING-SELECTED                  VALUE '0'.
+014300         88  LINE-WAS-SELECTED                 VALUE '1'.
+014400     05  POOL-SERVICE-CODE             PIC X   VALUE SPACE.
+014500         88  MINE-TURN-SVC                     VALUE 'M'.
+014600     05  BID-PACK-FLAG                 PIC X   VALUE SPACE.
+014700         88  BID-PACK-POOL                     VALUE 'B'.
+014800         88  SCHEDULE-POOL                     VALUE 'S'.
+014900     05  DISPLAY-TURN-FLAG             PIC X   VALUE SPACE.
+015000         88  DISPLAY-TURN                      VALUE ' '.
+015100         88  DONT-DISPLAY-TURN                 VALUE 'N'.
+015200         88  DONT-DISPLAY-STOP                 VALUE 'S'.
+015300*CNC0564A - BEG
+015400         88  DISPLAY-TURN-RD-RED               VALUE 'R'.
+015500*CNC0564A - END
+015600     05  READ-NEXT-REC-FLAG            PIC X   VALUE SPACE.
+015700         88  DONT-READ-NEXT-REC                VALUE ' '.
+015800         88  READ-NEXT-REC                     VALUE 'Y'.
+015900     05  FOUND-CYCLE-FLAG              PIC X   VALUE '0'.
+016000         88  NOT-FOUND-CYCLE                   VALUE '0'.
+016100         88  FOUND-CYCLE                       VALUE '1'.
+016200     05  CURRENT-CYCLE-FLAG            PIC X   VALUE '0'.
+016300         88  FROM-CURRENT-CYCLE                VALUE '0'.
+016400         88  NOT-FROM-CURRENT-CYCLE            VALUE '1'.
+016500*CNC0564A - BEG
+016600     05  WS-3A-BIDPK-TIEBRK-FL         PIC X   VALUE SPACE.
+016700         88  WS-3A-BIDPK-TIEBRK-PW-BRD         VALUE  'B'.
+016800         88  WS-3A-BIDPK-TIEBRK-PROT-W         VALUES ' ' 'P'.
+016900     05  TURN-IS-SCHEDULED-FL          PIC X   VALUE '0'.
+017000         88  TURN-IS-SCHEDULED                 VALUE '0'.
+017010         88  TURN-IS-NOT-SCHEDULED             VALUE '1'.
+017020     05  DUP-TURN-FLAG                 PIC X   VALUE 'N'.
+017030         88 DUP-TURN-NOT-DONE                  VALUE 'N'.
+017040         88 DUP-TURN-DONE                      VALUE 'Y'.
+017050*CNC0564A - END
+027100*CNC0600-B
+027200     05  WS-CAN-WRR-FLAG             PIC X(001) VALUE ' '.
+027300         88  WS-CAN-WRR-NEW                     VALUE 'N'.
+027400         88  WS-CAN-WRR-OLD                     VALUE ' ' 'O'.
+027500     05  WS-EMP-STATUS-FLAG          PIC X(001) VALUE ' '.
+027600         88  WS-EMP-STATUS-RED                  VALUE 'R'.
+027700         88  WS-EMP-STATUS-YELLOW               VALUE 'Y'.
+027800     05  AT-HOME-TERM-FLAG             PIC X(001) VALUE SPACES.
+027900         88  NOT-AT-HOME-TERM          VALUE '1' '2' '3' '4' '5'.
+028000         88  AT-HOME-TERM                       VALUE '0'.
+027800     05  WS-CHECK-60-192-FLAG        PIC X(001) VALUE 'N'.
+027900         88  WS-CHECK-60-192-STATUS             VALUE 'Y'.
+027900         88  WS-DO-NOT-CHECK-60-192-STATUS      VALUE 'N'.
+028100*CNC0600-E
+017060
+017070 01  WS-HOLD-SCHED                     PIC X(158) VALUE SPACES.
+017080 01  SAVE-SCHED-KEY2.
+017090     02  FILLER                        PIC X(06) VALUE SPACES.
+017100     02  SAVE-SK2-CC                   PIC X(02) VALUE SPACES.
+017200     02  FILLER                        PIC X(13) VALUE SPACES.
+017300     02  SAVE-SK2-TURN-ID              PIC X(04) VALUE SPACES.
+017400     02  FILLER                        PIC X(08) VALUE SPACES.
+017500
+017600 01  WS-SAVE-ASGN-FILE.
+017700     02  WORK-ASGNKEY1.
+017800         04  WK-ASGN-JOB-TYPE          PIC X     VALUE 'X'.
+017900         04  WK-ASGN-DIST              PIC XX    VALUE SPACE.
+018000         04  WK-ASGN-SUB-DIST          PIC XX    VALUE SPACE.
+018100         04  WK-ASGN-ASGN.
+018200             06  WK-ASGN-POOL          PIC X(2)  VALUE SPACE.
+018300             06  WK-ASGN-TURN          PIC X(4)  VALUE SPACE.
+018400             06  WK-ASGN-CC            PIC X(2)  VALUE SPACE.
+018500         04  WK-ASGN-REC-TYPE          PIC X(1)  VALUE SPACE.
+018600         04  WK-ASGN-DATE-TIME         PIC 9(10) VALUE ZEROS.
+018700     02  WORK-ASGNKEY2.
+018800         04  WK-ASGN-EMP-NO            PIC X(9)  VALUE SPACE.
+018900         04  FILLER                    PIC X(11) VALUE SPACE.
+019000     02  FILLER                        PIC X(84) VALUE SPACE.
+019100
+019200 01  NORMAL-ASGNMT-FLAG                PIC X     VALUE SPACE.
+019300     88  NORM-ASGN-UFP                           VALUE 'U'.
+019400     88  NORM-ASGN-XB                            VALUE 'X'.
+019500     88  NORM-ASGN-AJ                            VALUE 'A'.
+019600 01  NORMAL-ASGNMT.
+019700     02  NA-DIST                       PIC XX   VALUE SPACE.
+019800     02  NA-SUB-DIST                   PIC XX   VALUE SPACE.
+019900     02  NA-AREA.
+020000       03  NA-1                        PIC X(6).
+020100       03  NA-2 REDEFINES NA-1.
+020200         04  NA-POOL                   PIC XX.
+020300         04  NA-TURN                   PIC X(4).
+020400       03  NA-3 REDEFINES NA-1.
+020500         04  NA-FILLER                 PIC XX.
+020600         04  NA-XB-TURN                PIC X(4).
+020700       03  NA-CC                       PIC XX.
+020800
+020900 01  TEMPORARY-ASGNMT-FLAG             PIC X     VALUE SPACE.
+021000     88  TEMP-ASGN-UFP                           VALUE 'U'.
+021100     88  TEMP-ASGN-XB                            VALUE 'X'.
+021200     88  TEMP-ASGN-AJ                            VALUE 'A'.
+021300 01  TEMPORARY-ASGNMT.
+021400     02  TA-DIST                        PIC XX   VALUE SPACE.
+021500     02  TA-SUB-DIST                    PIC XX   VALUE SPACE.
+021600     02  TA-AREA.
+021700       03  TA-1                         PIC X(6).
+021800       03  TA-2 REDEFINES TA-1.
+021900         04  TA-POOL                    PIC XX.
+022000         04  TA-TURN                    PIC X(4).
+022100       03  TA-3 REDEFINES TA-1.
+022200         04  TA-FILLER                  PIC XX.
+022300         04  TA-XB-TURN                 PIC X(4).
+022400       03  TA-CC                        PIC XX   VALUE SPACE.
+022500
+022600 01  ON-DUTY-ASGNMT-FLAG                PIC X    VALUE SPACE.
+022700     88  ON-DUTY-UFP                             VALUE 'U'.
+022800     88  ON-DUTY-AJ                              VALUE 'A'.
+022900 01  ON-DUTY-ASGNMT.
+023000     02  OD-DIST                        PIC XX   VALUE SPACE.
+023100     02  OD-SUB-DIST                    PIC XX   VALUE SPACE.
+023200     02  OD-AREA.
+023300       03  OD-1                         PIC X(6).
+023400       03  OD-2 REDEFINES OD-1.
+023500         04  OD-POOL                    PIC XX.
+023600         04  OD-TURN                    PIC X(4).
+023700       03  OD-CC                        PIC XX   VALUE SPACE.
+023800 01  ON-DUTY-OUT-TOWN-CODE              PIC X(10)
+023900                                        VALUE '9999999999'.
+024000     88  OUT-TOWN                       VALUE '0000000000'.
+024100
+024200 01  WS-MISC-NUM.
+024300     02  FIRST-EMP-NBR                 PIC 9(9) VALUE 0.
+024400         88  HAVE-PERMANENT-EMPLOYEE   VALUES 000000001
+024500                                         THRU 999999995.
+024600     02  ON-DUTY-EMP                   PIC 9(9) VALUE 0.
+024700         88  HAVE-ON-DUTY-EMPLOYEE     VALUES 000000001
+024800                                         THRU 999999995.
+024900     02  TEMP-EMP-ONE                  PIC 9(9) VALUE 0.
+025000         88  HAVE-TEMPORARY-EMPLOYEE   VALUES 000000001
+025100                                         THRU 999999995.
+025200     02  WS-EXPAND-TERM.
+025300         04  WS-EXPAND-TERM1           PIC X(01) VALUE '0'.
+025400         04  WS-EXPAND-TERM2           PIC X(01) VALUE '0'.
+025500
+025600 01  WS-MISC.
+025700     02  WS-COMPARE-TURN               PIC X(12) VALUE SPACES.
+025800     02  WS-SAVE-POOL-CRAFTS           PIC X(08) VALUE SPACES.
+025900     02  WS-SAVE-POOL-MARRIED          PIC X(05) VALUE SPACES.
+026000     02  HOLD-START-DATE-TIME.
+026100         04  HOLD-START-DATE           PIC X(08) VALUE SPACES.
+026200         04  HOLD-START-TIME           PIC X(04) VALUE SPACES.
+026300     02  WS-EVAL-DATE-TIME.
+026400         04  WS-EVAL-DATE            PIC X(06) VALUE SPACES.
+026500         04  WS-EVAL-TIME            PIC X(04) VALUE SPACES.
+026600     02  WS-END-CYCLE-DATE-TIME.
+026700         04  WS-END-CYCLE-DATE.
+026800             06  WS-END-CYCLE-CENT   PIC X(02) VALUE SPACES.
+026900             06  WS-END-CYCLE-YYMMDD PIC X(06) VALUE SPACES.
+027000         04  WS-END-CYCLE-TIME       PIC X(04) VALUE SPACES.
+027100
+027200     02  WS-SCHED-END-DATE-TIME.
+027300         04  WS-SCHED-END-DATE.
+027400             06  WS-SCHED-END-CE     PIC X(02) VALUE SPACES.
+027500             06  WS-SCHED-END-YYMMDD PIC X(06) VALUE SPACES.
+027600         04  WS-SCHED-END-TIME       PIC X(04) VALUE SPACES.
+027700     02  WS-CYCLE-START-DATE-TIME.
+027800         04  WS-CYCLE-START-DATE-CENT.
+027900             06  WS-CYCLE-START-CE     PIC X(02) VALUE SPACES.
+028000             06  WS-CYCLE-START-DATE.
+028100                 08  WS-CYCLE-START-YY PIC X(02) VALUE SPACES.
+028200                 08  WS-CYCLE-START-MM PIC X(02) VALUE SPACES.
+028300                 08  WS-CYCLE-START-DD PIC X(02) VALUE SPACES.
+028400         04  WS-CYCLE-START-TIME       PIC X(04).
+028500     02  WS-CYCLE-START-DATE-CALC REDEFINES
+028600         WS-CYCLE-START-DATE-TIME.
+028700         04  WS-CYCLE-START-CCYY     PIC 9(04).
+028800         04  WS-CYCLE-START-CCYR  REDEFINES
+028900             WS-CYCLE-START-CCYY.
+029000             06  WS-CYCLE-START-CC   PIC X(02).
+029100             06  WS-CYCLS-START-YR   PIC X(02).
+029200         04  FILLER                  PIC X(08).
+029300*CNC0510
+029400 01  WS-PREV-SCHED-END-DTTM          PIC 9(12)   VALUE ZEROS.
+029500 01  WS-PREV-SCHED-ASGN              PIC X(08)   VALUE SPACES.
+029600 01  WS-COMPARE-SCHED-START-DTTM     PIC 9(12)   VALUE ZEROS.
+029700 01  WS-COMPARE-SCHED-END-DTTM       PIC 9(12)   VALUE ZEROS.
+029800*
+034600*CNC0600-B
+034700 01  WS-WRR-CALC-FIELDS.
+035800     02  WS-LOCAL-CURRENT-DTTM-CENT.
+035900         04 WS-LOCAL-CURRENT-DATE.
+036500             05 WS-LOCAL-CURRENT-DATE-CE      PIC X(02).
+036500             05 WS-LOCAL-CURRENT-DATE-YYMMDD  PIC X(06).
+036000         04 WS-LOCAL-CURRENT-TIME     PIC X(04) VALUE SPACES.
+035800     02  WS-LOCAL-CUR-DTTM-YYMMDDHHSS.
+036500         04 WS-LOCAL-CUR-DATE-YYMMDD  PIC X(06) VALUE SPACES.
+036000         04 WS-LOCAL-CUR-TIME-HHMM    PIC X(04) VALUE SPACES.
+036100     02  WS-WRR-6HRS-AFTER-DTTM.
+036200         04  WS-WRR-6HRS-AFTER-NUM            PIC 9(10).
+036300         04  WS-WRR-6HRS-AFTER-CH
+036400             REDEFINES WS-WRR-6HRS-AFTER-NUM.
+036500             05 WS-WRR-6HRS-AFTER-DATE        PIC X(06).
+036600             05 WS-WRR-6HRS-AFTER-TIME        PIC X(04).
+036700* WS-RB-LEAD-TIME IS USED TO GET THE LEAD TIME BEFORE TO SHOW
+036800* EMPLOYEE STATUS IN COLORS
+036900     02  WS-RESET-BK-LEAD-TIME        PIC X(04) VALUE '0600'.
+037000*CNC0600-E
+029900
+030000 01  WS-CALL-ORDER-AREA.
+030100     02 WS-CALL-ORDER-KEY-ARRAY OCCURS 8.
+030200        04 WS-CALL-ORDER-KEY.
+030300           06 WS-CO-START-DATE         PIC X(08) VALUE SPACES.
+030400           06 WS-CO-START-TIME         PIC X(04) VALUE SPACES.
+030500           06 WS-CO-CALL-ORDER         PIC X(01) VALUE SPACES.
+030600           06 WS-CO-POSITION           PIC X(16) VALUE SPACES.
+030700
+030800
+030900 01  WORK-CNTLKEY.
+031000     02  WK-CNTL-REC-TYPE              PIC XX    VALUE '03'.
+031100     02  WK-CNTL-DIST                  PIC XX    VALUE SPACE.
+031200     02  WK-CNTL-SUB-DIST              PIC XX    VALUE SPACE.
+031300     02  WK-CNTL-POOL                  PIC XX    VALUE SPACE.
+031400     02  WK-CNTL-POOL-TYPE             PIC X     VALUE SPACE.
+031500     02  FILLER                        PIC X(11) VALUE SPACE.
+031600
+031700 01  WORK-FIELD.
+031800     02  FILLER                        PIC XXX   VALUE 'ON '.
+031900     02  TR-FLD                        PIC X(10) VALUE SPACE.
+032000     02  FILLER                        PIC XXX   VALUE ' / '.
+032100     02  NM-FLD                        PIC X(10) VALUE SPACE.
+032200
+032300 01  TRAIN-FIELD.
+032400     02  FILLER                        PIC XXX   VALUE 'ON '.
+032500     02  TRAIN-FLD                     PIC X(10) VALUE SPACE.
+032600
+032700 01  LOCATION-AREA.
+032800     02  FILLER                        PIC X     VALUE SPACE.
+032900     02  LOC-DIST                      PIC XX    VALUE SPACE.
+033000     02  FILLER                        PIC X     VALUE '/'.
+033100     02  LOC-SUB-DIST                  PIC XX    VALUE SPACE.
+033200     02  FILLER                        PIC X     VALUE '/'.
+033300     02  LOC-POOL                      PIC XX    VALUE SPACE.
+033400     02  FILLER                        PIC X     VALUE '-'.
+033500     02  LOC-I-O                       PIC X     VALUE SPACE.
+033600
+033700*01  TIME-AREA.
+033800*    02  SYSTEM-DATE.
+033900*        03  SYS-YR                    PIC 9(2).
+034000*        03  SYS-MO                    PIC 9(2).
+034100*        03  SYS-DY                    PIC 9(2).
+034200*    02  SYSTEM-TIME.
+034300*        03  SYS-HRMN.
+034400*            04  SYS-HR                PIC 9(2).
+034500*            04  SYS-MN                PIC 9(2).
+034600*        03  SYS-SCMS.
+034700*            04  SYS-SC                PIC 9(2).
+034800*            04  SYS-MS                PIC 9(2).
+034900*01  TIME-AREA-A REDEFINES TIME-AREA.
+035000*    02  PRESENT-TIME                  PIC 9(10).
+035100*    02  FILLER                        PIC X(4).
+035200 01  WORK-HIST-TIMEX.
+035300     02  WORK-HIST-TIME       PIC 9(12).
+035400     02  WORK-HIST-TIME-TIE   PIC 9(02).
+035500 01  WS-VL2-SYS-DATE-TIME-CENT.
+035600     02  WS-VL2-SYS-CENT               PIC X(02) VALUE SPACE.
+035700     02  WS-VL2-SYS-DATE-TIME.
+035800         04  WS-VL2-SYS-DATE           PIC X(06) VALUE SPACE.
+035900         04  WS-VL2-SYS-TIME           PIC X(04) VALUE SPACE.
+036000
+036100*01  WS-LOCAL-DATE-TIME.
+036200*    02  WS-LOCAL-DATE                 PIC X(06) VALUE SPACE.
+036300*    02  WS-LOCAL-TIME                 PIC X(04) VALUE SPACE.
+036400 01  WS-TIME-ZONE                      PIC X(01) VALUE SPACE.
+036500
+036600 01  CHECK-VALID-TURN.
+036700     02  VALID-TURN-PREFIX             PIC XX VALUE SPACE.
+036800     02  VALID-TURN-SUFFIX             PIC XX VALUE SPACE.
+036900
+037000 01  WS-UFP-TURN-KEY.
+037100     02  WS-UFP-DIST                   PIC XX    VALUE SPACE.
+037200     02  WS-UFP-SUB-DIST               PIC XX    VALUE SPACE.
+037300     02  WS-UFP-POOL                   PIC XX    VALUE SPACE.
+037400     02  WS-UFP-TURN                   PIC X(4)  VALUE SPACE.
+037500     02  WS-UFP-CC                     PIC XX    VALUE SPACE.
+037600
+037700 01  WS-UFP-POS-KEY.
+037800     02  WS-UFP-POS-DIST               PIC XX    VALUE SPACE.
+037900     02  WS-UFP-POS-SUB-DIST           PIC XX    VALUE SPACE.
+038000     02  WS-UFP-POS-POOL               PIC XX    VALUE SPACE.
+038100     02  WS-UFP-POS-CC                 PIC XX    VALUE SPACE.
+038200     02  WS-UFP-POS-IN-OUT             PIC 99    VALUE ZEROES.
+038300     02  FILLER REDEFINES WS-UFP-POS-IN-OUT.
+038400         04  FILLER                    PIC X.
+038500         04  WS-UFP-POS-IN-OUT-TERM    PIC X.
+038600     02  WS-KEY-POS.
+038700         04  WS-KEY-POS-BOARD          PIC X     VALUE ZEROES.
+038800         04  WS-KEY-POS-AREA.
+038900             06  WS-KEY-POS-DATE-TIME  PIC X(10) VALUE ZEROES.
+039000             06  WS-KEY-POS-TIE-BREAK  PIC 9(4)  VALUE ZEROES.
+039100
+039200 01  HOLD-UFP.
+039300     02  FILLER                        PIC X(25) VALUE SPACE.
+039400     02  HOLD-UFPTURN-AREA.
+039500         03  HOLD-DIST                 PIC XX    VALUE SPACE.
+039600         03  HOLD-SUB-DIST             PIC XX    VALUE SPACE.
+039700         03  HOLD-POOL-NAME            PIC XX    VALUE SPACE.
+039800         03  HOLD-TURN-NBR             PIC X(4)  VALUE SPACE.
+039900         03  HOLD-POOL-CRAFT-CODE      PIC XX    VALUE SPACE.
+040000     02  FILLER                        PIC X(219) VALUE SPACE.
+040100*CNC0499 - MFO - TESTING - BEG
+040200 01  MAKEUP-TURN.
+040300     02  MAKEUP-DIST                   PIC X(2)  VALUE SPACES.
+040400     02  MAKEUP-SUB-DIST               PIC X(2)  VALUE SPACES.
+040410     02  MAKEUP-POOL                   PIC X(2)  VALUE SPACES.
+040411     02  MAKEUP-TURN-NBR.
+040412         03  MAKEUP-TURN-PREFIX        PIC X(2)  VALUE SPACES.
+040413         03  MAKEUP-TURN-NUMERIC       PIC 9(2)  VALUE ZEROS.
+040414     02  MAKEUP-CC                     PIC X(2)  VALUE SPACES.
+040415 01  WS-SV-UFPTURN-AREA.
+040416     02  FILLER                        PIC X(6)  VALUE SPACE.
+040417     02  WS-SV-UFP-TURN                PIC X(4)  VALUE SPACE.
+040418     02  FILLER                        PIC XX    VALUE SPACE.
+040419 01  WS-ORIG-TURN-NBR                  PIC X(4)  VALUE SPACE.
+040420*CNC0499 - MFO - TESTING - END
+040430
+040440 01  HOLD-POOL-REST-CODES.
+040450     02  HOLD-POOL-REST-CODE           PIC X(01) VALUE SPACES.
+040460
+040470 01  WS-PROFILE.
+040480     02  WS-PROF-DIST                  PIC X(02) VALUE SPACES.
+040490     02  WS-PROF-SUB-DIST              PIC X(02) VALUE SPACES.
+040500     02  WS-PROF-BOARD                 PIC X(02) VALUE SPACES.
+040600     02  WS-PROF-TERM                  PIC X(01) VALUE SPACES.
+040700     02  WS-PROF-TYPE                  PIC X(01) VALUE SPACES.
+040800 01  WS-CREW-UNIT                      PIC X(01) VALUE SPACES.
+040900
+041000 01  WS-VARIABLE-LINE-1-HDR.
+041100     02  FILLER           PIC X(6)  VALUE SPACES.
+041200     02  FILLER           PIC X(16) VALUE 'TURN INFORMATION'.
+041300     02  FILLER           PIC X(5)  VALUE SPACE.
+041400     02  FILLER           PIC X(6)  VALUE 'N S B '.
+041500 01  WS-VARIABLE-LINE-1-HDR-FRENCH.
+041600     02  FILLER           PIC X(6)  VALUE SPACES.
+041700     02  FILLER           PIC X(16) VALUE 'INFORMATION TOUR'.
+041800     02  FILLER           PIC X(5)  VALUE SPACE.
+041900     02  FILLER           PIC X(6)  VALUE 'N C S '.
+042000 01  WS-VARIABLE-LINE-2-HDR.
+042100     02  FILLER           PIC X(19) VALUE 'BOARD TIME-TIE CODE'.
+042200     02  FILLER           PIC X(14) VALUE SPACES.
+042300 01  WS-VARIABLE-LINE-2-HDR-FRENCH.
+042400     02  FILLER           PIC X(19) VALUE 'TEMPS SUR TABLEAU  '.
+042500     02  FILLER           PIC X(14) VALUE SPACES.
+042600 01  WS-VARIABLE-LINE-3-HDR.
+042700***  02  FILLER           PIC X(17) VALUE 'SC HM PERS   MTOD'.
+042800     02  FILLER           PIC X(18) VALUE 'RN SC  PERS   MTOD'.
+042900     02  FILLER           PIC X(16) VALUE ' USHR TURN INFO '.
+043000 01  WS-VARIABLE-LINE-3-HDR-FRENCH.
+043100***  02  FILLER           PIC X(17) VALUE 'SE HM PERS   THSO'.
+043200     02  FILLER           PIC X(18) VALUE 'RN SE  PERS   THSO'.
+043300     02  FILLER           PIC X(16) VALUE ' HMEU INFO TOUR '.
+043400 01  WS-VARIABLE-LINE-4-HDR.
+043500     02  FILLER           PIC X(11) VALUE 'DD SS PP T '.
+043600     02  FILLER           PIC X(19) VALUE 'BOARD TIME         '.
+043700     02  FILLER           PIC X(03) VALUE SPACES.
+043800 01  WS-VARIABLE-LINE-4-HDR-FRENCH.
+043900     02  FILLER           PIC X(11) VALUE 'DD SS PP T '.
+044000     02  FILLER           PIC X(19) VALUE 'TEMPS SUR          '.
+044100     02  FILLER           PIC X(03) VALUE SPACES.
+044200 01  WS-VARIABLE-LINE-5-HDR.
+044300***  02  FILLER           PIC X(19) VALUE 'HM PERS   MTOD USHR'.
+044400     02  FILLER           PIC X(20) VALUE 'RN  PERS   MTOD USHR'.
+044500     02  FILLER           PIC X(14) VALUE ' START END CO '.
+044600 01  WS-VARIABLE-LINE-5-HDR-FRENCH.
+044700***  02  FILLER           PIC X(19) VALUE 'HM PERS   THSO HMEU'.
+044800     02  FILLER           PIC X(20) VALUE 'RN  PERS   THSO HMEU'.
+044900     02  FILLER           PIC X(14) VALUE ' START END CO '.
+045000*CNC0564A - 04/29/15 - BEG
+045100 01  WS-VARIABLE-LINE-6-HDR.
+045200     02  FILLER           PIC X(20) VALUE 'RN  PERS   MTOD USHR'.
+045300     02  FILLER           PIC X(14) VALUE ' START   END  '.
+045400 01  WS-VARIABLE-LINE-6-HDR-FRENCH.
+045500     02  FILLER           PIC X(20) VALUE 'RN  PERS   THSO HMEU'.
+045600     02  FILLER           PIC X(14) VALUE ' START   END  '.
+045610*CNC0564A - 04/29/15 - END
+045620 01  WS-VARIABLE-LINE-1.
+045630     02  WS-VL1-VARIABLE.
+045640         04  WS-VL1-VARIABLE-A  PIC X(15) VALUE SPACES.
+045650         04  WS-VL1-VARIABLE-B  PIC X(11) VALUE SPACES.
+045660     02  FILLER                 PIC X     VALUE SPACE.
+045670     02  WS-VL1-INFO-1          PIC X     VALUE SPACE.
+045680     02  FILLER                 PIC X     VALUE SPACE.
+045690     02  WS-VL1-INFO-2          PIC X     VALUE SPACE.
+045700     02  FILLER                 PIC X     VALUE SPACE.
+045800     02  WS-VL1-INFO-3          PIC X     VALUE SPACE.
+045900     02  FILLER                 PIC X     VALUE SPACE.
+046000
+046100 01  WS-VARIABLE-LINE-2.
+046200     02  WS-VL2-DATE-TIME.
+046300         03  WS-VL2-DATE.
+046400             04  WS-VL2-YR       PIC XX.
+046500             04  WS-VL2-MO       PIC XX.
+046600             04  WS-VL2-DY       PIC XX.
+046700         03  WS-VL2-TIME.
+046800             04  WS-VL2-HR       PIC XX.
+046900             04  WS-VL2-MN       PIC XX.
+047000     02  WS-VL2-DASH             PIC X.
+047100     02  WS-VL2-TIE-CODE         PIC X(4).
+047200     02  FILLER                  PIC X(18).
+047300
+047400 01  WS-VARIABLE-LINE-3.
+047500     02  WS-VL3-RSN              PIC X(2).
+047600     02  FILLER                  PIC X.
+047700     02  WS-VL3-SHORT-TURN       PIC XX.
+047800     02  FILLER                  PIC X.
+047900***  02  WS-VL3-HOME             PIC X.
+048000***  02  FILLER                  PIC X.
+048100     02  WS-VL3-PERS-REST        PIC X(4).
+048200     02  FILLER                  PIC X.
+048300     02  WS-VL3-PERS-REST-DY     PIC X(2).
+048400     02  FILLER                  PIC X.
+048500     02  WS-VL3-MTOD             PIC X(4).
+048600     02  FILLER                  PIC X.
+048700     02  WS-VL3-USHR             PIC X(4).
+048800     02  WS-VL3-TURN-INFO        PIC X(11).
+048900
+049000 01  WS-VARIABLE-LINE-4.
+049010     02  WS-VL4-DIST             PIC XX.
+049020     02  WS-VL4-DASH1            PIC X.
+049030     02  WS-VL4-SDIST            PIC XX.
+049040     02  WS-VL4-DASH2            PIC X.
+049050     02  WS-VL4-POOL             PIC XX.
+049060     02  WS-VL4-DASH3            PIC X.
+049070     02  WS-VL4-TERM             PIC X.
+049080     02  WS-VL4-DASH4            PIC X.
+049090     02  WS-VL4-DATE-TIME.
+049100         03  WS-VL4-DATE.
+049200             04  WS-VL4-YR       PIC XX.
+049300             04  WS-VL4-MO       PIC XX.
+049400             04  WS-VL4-DY       PIC XX.
+049500         03  WS-VL4-TIME.
+049600             04  WS-VL4-HR       PIC XX.
+049700             04  WS-VL4-MN       PIC XX.
+049800     02  FILLER                  PIC X(12).
+049900
+050000 01  WS-VARIABLE-LINE-5.
+050100***  02  WS-VL5-HOME             PIC X.
+050200     02  WS-VL5-RSN              PIC X(2).
+050300     02  FILLER                  PIC X.
+050400     02  WS-VL5-PERS             PIC X(4).
+050500     02  FILLER                  PIC X.
+050600     02  WS-VL5-PERS-DY          PIC X(2).
+050700     02  FILLER                  PIC X.
+050800     02  WS-VL5-MTOD             PIC X(4).
+050900     02  FILLER                  PIC X.
+051000     02  WS-VL5-USHR             PIC X(4).
+051100     02  FILLER                  PIC XX.
+051200     02  WS-VL5-START            PIC X(4).
+051300     02  FILLER                  PIC X.
+051400     02  WS-VL5-END              PIC X(4).
+051500     02  FILLER                  PIC X.
+051600     02  WS-VL5-CO               PIC X(1).
+051700     02  FILLER                  PIC X.
+051800*CNC0564A - 04/29/15 - BEG
+051900 01  WS-VARIABLE-LINE-6.
+052000     02  WS-VL6-RSN              PIC X(2).
+052100     02  FILLER                  PIC X.
+052200     02  WS-VL6-PERS             PIC X(4).
+052300     02  FILLER                  PIC X.
+052400     02  WS-VL6-PERS-DY          PIC X(2).
+052500     02  FILLER                  PIC X.
+052510     02  WS-VL6-MTOD             PIC X(4).
+052520     02  FILLER                  PIC X.
+052521     02  WS-VL6-USHR             PIC X(4).
+052522     02  FILLER                  PIC X.
+052523     02  WS-VL6-DAY              PIC X(2).
+052524     02  FILLER                  PIC X.
+052525     02  WS-VL6-START            PIC X(4).
+052526     02  FILLER                  PIC X.
+052527     02  WS-VL6-END              PIC X(4).
+052528     02  FILLER                  PIC X.
+052529*CNC0564A - 04/29/15 - END
+052530
+052540******************************************************************
+052550***                  TEMPORARY STORAGE QUEUE                   ***
+052560******************************************************************
+052570 01  P15XTSQ-QUEUE-ITEM         PIC S9(4)  COMP VALUE +1.
+052580 01  P15XTSQ-MAP-QUEUE-ID.
+052590     05  P15XTSQ-MAP-QUEUE      PIC X(4)   VALUE '15XM'.
+052600     05  P15XTSQ-MAP-TERM-ID    PIC X(4)   VALUE SPACES.
+052700 01  P15XTSQ-CA-QUEUE-ID.
+052800     05  P15XTSQ-CA-QUEUE       PIC X(4)   VALUE '15XC'.
+052900     05  P15XTSQ-CA-TERM-ID     PIC X(4)   VALUE SPACES.
+053000
+053100
+053200 01  P15XTSQ-QLGTH              PIC S9(4)  COMP VALUE +1.
+053300*****************************************************************
+053400***                 I/O STATUS CHECK FIELDS
+053500*****************************************************************
+053600 01  WS-RESPONSE                 PIC S9(8) COMP VALUE ZEROES.
+053700 01  FILE-STATUS                 PIC 9(4)  VALUE ZEROES.
+053800     COPY IOCODES.
+053900*****************************************************************
+054000***                      COMMAREA COPYBOOKS
+054100*****************************************************************
+054200     COPY PSTCOMM.
+054300     COPY P12DCOMM.
+054400     COPY P998COMM.
+054500     COPY P997COMM.
+054600     COPY P15XCOMM.
+054700*****************************************************************
+054800***                     MAP AREA COPYBOOK
+054900*****************************************************************
+055000     COPY PSM15XRE.
+055100*****************************************************************
+055200***                   PROGRAM NAMES COPYBOOKS
+055300*****************************************************************
+055400     COPY PSTCB15X.
+055500     COPY PSTCB03.
+055600     COPY PSTCB12D.
+055700     COPY PSTCB997.
+055800     COPY PSTCB998.
+055900*****************************************************************
+056000***                 CALLED ROUTINES COPYBOOKS.
+056100*****************************************************************
+056200     COPY PSTERAR.
+056300     COPY P903COMM.
+056400     COPY P910COMM.
+056500     COPY P915COMM.
+056600     COPY P916COMM.
+056700     COPY P943COMM.
+056800     COPY P956COMM.
+071300*CNC0600-B
+071400     COPY PS08COMM.
+071500*CNC0600-E
+056900*****************************************************************
+057000***                     FILE COPYBOOKS
+057100*****************************************************************
+057200     COPY WSMSTR.
+072000*CNC000-B
+072100     COPY WSMSTR3.
+072200*CNC000-E
+057300     COPY WSASGN.
+057400     COPY WSCNTL.
+057500     COPY WSUFP.
+057600     COPY WSCARR.
+057700     COPY WSSCHED.
+057800*****************************************************************
+057900***                     MISC. COPYBOOKS
+058000*****************************************************************
+058100     COPY PSTKEYS.
+058200     COPY PSTATTR.
+058300     COPY WSEDDATE.
+058400     COPY WSEDTIME.
+058500     COPY WSMSG.
+058600     COPY PSTCCRFT.
+058700     COPY WSZONE.
+058800     COPY WSBUFFER.
+058900     COPY WSSYDTTM.
+059000     COPY WSZAP.
+059100
+059200*================================================================*
+059300 LINKAGE SECTION.
+059400*================================================================*
+059500
+059600 01  DFHCOMMAREA.
+059700     05  LINK-COMM-A            PIC X(170).
+059800     05  LINK-COMM-B            PIC X(975).
+059900
+060000*================================================================*
+060100 PROCEDURE DIVISION.
+060200*================================================================*
+060300
+060400*----------------------------*
+060500 P0000-MAINLINE.
+060600*----------------------------*
+060700     EXEC CICS IGNORE
+060800               CONDITION
+060900               ERROR
+061000     END-EXEC
+061100     EXEC CICS HANDLE
+061200               ABEND
+061300               LABEL(P9999-GOT-PROBLEM)
+061400     END-EXEC
+061500     COPY ABSTIME.
+061600     IF EIBCALEN = ZERO
+061700        PERFORM P9990-CLEAR-SCREEN
+061800     END-IF
+061900     IF EIBCALEN > PSTCOMM-LGTH
+062000        MOVE LINK-COMM-A TO PSTCOMM-AREA
+062100        MOVE LINK-COMM-B TO P15XCA-SCREEN-COMM
+062200     ELSE
+062300        MOVE LINK-COMM-A TO PSTCOMM-AREA
+062400     END-IF
+062500     IF EIBTRNID NOT = P15X-TRAN
+062600        SET CREATE-SCREEN    TO TRUE
+062700        MOVE LOW-VALUES      TO PSTS15X
+062800        IF EIBTRNID = P998-TRAN
+062900           MOVE P998CA-CURSOR-POS TO EIBCPOSN
+063000           PERFORM P7010-READ-TSQUEUE
+063100           PERFORM P9000-SEND-MAP-AND-RETURN
+063200        END-IF
+063300        IF EIBTRNID = P997-TRAN
+063400           SET ENTER-KEY              TO TRUE
+063500           MOVE '0'                   TO SCR15X-BOARD
+063600           MOVE P997CA-PASS-KEY(3:2)  TO SCR15X-DIST
+063700           MOVE P997CA-PASS-KEY(5:2)  TO SCR15X-SUB-DIST
+063800           MOVE P997CA-PASS-KEY(7:2)  TO SCR15X-POOL
+063900           MOVE 'I'                   TO SCR15X-FUNCTION
+064000        ELSE
+064100           IF EIBTRNID = P12D-TRAN
+064200              SET ENTER-KEY           TO TRUE
+064300              MOVE '0'                TO SCR15X-BOARD
+064400              MOVE P12DCA-DIST        TO SCR15X-DIST
+064500              MOVE P12DCA-SUB-DIST    TO SCR15X-SUB-DIST
+064600              MOVE P12DCA-BOARD       TO SCR15X-POOL
+064700              MOVE 'I'                TO SCR15X-FUNCTION
+064800              MOVE SPACES             TO SCR15X-START-DATE
+064900                                         SCR15X-START-TIME
+065000           ELSE
+065100              MOVE PSTCA-DIST   TO SCR15X-DIST
+065200              MOVE PSTCA-SUB-DIST TO SCR15X-SUB-DIST
+065300              MOVE 'I'          TO SCR15X-FUNCTION
+065400              MOVE -1           TO SCR15X-POOL-CURSOR
+065500              PERFORM P9000-SEND-MAP-AND-RETURN
+065600           END-IF
+065700        END-IF
+065800     ELSE
+065900        MOVE EIBAID TO PF-CHECK
+066000        IF EXIT-KEY
+066100           PERFORM P9100-SETUP-SCR03
+066200        END-IF
+066300     END-IF
+066400
+066500     PERFORM P0100-PROCESS-INPUT
+066600
+066700
+066800     PERFORM P9000-SEND-MAP-AND-RETURN.
+066900
+067000*
+067100*----------------------------*
+067200 P0100-PROCESS-INPUT.
+067300*----------------------------*
+067400*
+067500     IF EIBTRNID NOT = (P997-TRAN AND P12D-TRAN)
+067600        MOVE P15X-MAP-VERSION(PSTCA-SUB) TO P15X-MAP
+067700        EXEC CICS RECEIVE MAP(P15X-MAP)
+067800                          MAPSET(P15X-SET)
+067900                          INTO(PSTS15X)
+068000                          RESP(WS-RESPONSE)
+068100        END-EXEC
+068200        MOVE WS-RESPONSE TO FILE-STATUS
+068300        IF NOT SUCCESS
+068400           MOVE 'P0100-1' TO ERR-PARAGRAPH
+068500           PERFORM P9999-GOT-PROBLEM
+068600        END-IF
+068700     END-IF
+068800     IF PFKEY1
+068900        PERFORM P7005-WRITE-TSQUEUE
+069000        PERFORM P9500-SETUP-SCR998
+069100     END-IF
+069200     IF PFKEY10
+069300        PERFORM P9600-SETUP-SCR997
+069400     END-IF
+069500     PERFORM P8800-GET-CURRENT-TIME
+069600     MOVE WS-SYSTEM-DATE-TIME TO WORK-HIST-TIME
+069700     MOVE ZEROS               TO WORK-HIST-TIME-TIE
+069800
+069900     PERFORM P0200-RESET-ATTRIBUTES
+070000
+070100     MOVE SPACES              TO SCR15X-ERRORMSG
+070200     IF NOT ENTER-KEY AND NOT PFKEY8 AND NOT PFKEY10
+070300        MOVE -1               TO SCR15X-FUNCTION-CURSOR
+070400*            INVALID-FUNC-MSG
+070500        MOVE 'I006' TO MSGLOG-CODE
+070600        PERFORM P9000-SEND-MAP-AND-RETURN
+070700     END-IF
+070800     MOVE SCR15X-FUNCTION TO WS-FUNCTION
+070900     IF NOT FUNCTION-OK
+071000        MOVE -1               TO SCR15X-FUNCTION-CURSOR
+071100        MOVE REV-VIDEO        TO SCR15X-FUNCTION-HI
+071200*            INVALID-CODE-MSG
+071300        MOVE 'I006' TO MSGLOG-CODE
+071400        PERFORM P9000-SEND-MAP-AND-RETURN
+071500     END-IF
+071600     IF SCR15X-POOL       NOT = P15XCA-LAST-POOL
+071700     OR SCR15X-CRAFT-SEL  NOT = P15XCA-LAST-CC
+071800     OR SCR15X-BOARD      NOT = P15XCA-LAST-BOARD
+071900        MOVE SPACE TO P15XCA-LAST-FUNCTION
+072000        IF NOT (INQUIRY-REQ OR CALL-ORDER-REQ)
+072100           MOVE -1            TO SCR15X-FUNCTION-CURSOR
+072200           MOVE REV-VIDEO     TO SCR15X-FUNCTION-HI
+072300*               'MUST INQUIRE BEFORE UPDATE'
+072400           MOVE 'I063' TO MSGLOG-CODE
+072500           PERFORM P9000-SEND-MAP-AND-RETURN
+072600        END-IF
+072700     END-IF
+072800     IF PFKEY8
+072900        IF INQUIRY-REQ
+073000        OR REPOSITION-REQ
+073100        OR UFP-MOVE-REQ
+073200        OR CALL-ORDER-REQ
+073300           CONTINUE
+073400        ELSE
+073500           MOVE -1        TO SCR15X-FUNCTION-CURSOR
+073600*               INVALID-FUNC-MSG
+073700           MOVE 'I006'    TO MSGLOG-CODE
+073800           PERFORM P9000-SEND-MAP-AND-RETURN
+073900        END-IF
+074000     END-IF
+101900*CNC0600-B - GET THE NEW CAN WRR FLAG
+102000     MOVE SPACES                 TO WORK-CNTLKEY
+102100     MOVE '02'                   TO WK-CNTL-REC-TYPE
+102200     MOVE SCR15X-DIST            TO WK-CNTL-DIST
+102300     MOVE SCR15X-SUB-DIST        TO WK-CNTL-SUB-DIST
+102400     MOVE WORK-CNTLKEY           TO CNTLKEY
+102500     EXEC CICS READ
+102600               DATASET(CNTL-FILE-VIA-CNTLKEY)
+102700               INTO(WS-CNTL-FILE)
+102800               LENGTH(CNTLFILE-RLGTH)
+102900               RIDFLD(CNTLKEY)
+103000               KEYLENGTH(CNTLFILE-KLGTH)
+103100               RESP(WS-RESPONSE)
+103200     END-EXEC
+103300     MOVE WS-RESPONSE TO FILE-STATUS
+103400     IF NOT SUCCESS
+075800        MOVE -1             TO SCR15X-POOL-CURSOR
+075900        MOVE REV-VIDEO      TO SCR15X-POOL-HI
+076000*            ENTER-POOL-MSG
+076100        MOVE 'I389' TO MSGLOG-CODE
+076200        PERFORM P9000-SEND-MAP-AND-RETURN
+103800     END-IF
+103900     MOVE CNTL-CAN-WRR-FLAG TO WS-CAN-WRR-FLAG
+104000*CNC0600-E
+074100     MOVE SPACES          TO WORK-CNTLKEY
+074200     MOVE '03'            TO WK-CNTL-REC-TYPE
+074300     MOVE SCR15X-DIST     TO WK-CNTL-DIST
+074400     MOVE SCR15X-SUB-DIST TO WK-CNTL-SUB-DIST
+074500     MOVE SCR15X-POOL     TO WK-CNTL-POOL
+074600     MOVE 'F'             TO WK-CNTL-POOL-TYPE
+074700     MOVE WORK-CNTLKEY    TO CNTLKEY
+074800     EXEC CICS READ
+074900               DATASET(CNTL-FILE-VIA-CNTLKEY)
+075000               INTO(WS-CNTL-FILE)
+075100               LENGTH(CNTLFILE-RLGTH)
+075200               RIDFLD(CNTLKEY)
+075300               KEYLENGTH(CNTLFILE-KLGTH)
+075400               RESP(WS-RESPONSE)
+075500     END-EXEC
+075600     MOVE WS-RESPONSE TO FILE-STATUS
+075700     IF NOT SUCCESS
+075800        MOVE -1             TO SCR15X-POOL-CURSOR
+075900        MOVE REV-VIDEO      TO SCR15X-POOL-HI
+076000*            ENTER-POOL-MSG
+076100        MOVE 'M014' TO MSGLOG-CODE
+076200        PERFORM P9000-SEND-MAP-AND-RETURN
+076300     END-IF
+076400
+076500     IF CALL-ORDER-REQ
+076600        IF SCR15X-BOARD NOT = '0'
+076700*             'INVALID ENTRY CODE'
+076800           MOVE 'I041'            TO MSGLOG-CODE
+076900           MOVE -1                TO SCR15X-BOARD-CURSOR
+077000           MOVE REV-VIDEO         TO SCR15X-BOARD-HI
+077100           PERFORM P9000-SEND-MAP-AND-RETURN
+077200        END-IF
+077300     ELSE
+077400        IF SCHEDULE-REQ
+077500           IF SCR15X-BOARD NOT = ('0' AND 'T')
+077600*                'INVALID ENTRY CODE'
+077700              MOVE 'I041'         TO MSGLOG-CODE
+077800              MOVE -1             TO SCR15X-BOARD-CURSOR
+077900              MOVE REV-VIDEO      TO SCR15X-BOARD-HI
+078000              PERFORM P9000-SEND-MAP-AND-RETURN
+078100           END-IF
+078200        ELSE
+078300           MOVE SPACES            TO SCR15X-START-DATE
+078400                                     SCR15X-START-TIME
+078500        END-IF
+078600     END-IF
+078700*
+078800*    SAVE THE POOL CRAFTS AND MARRIED FLAGS.  THEY MUST BE
+078900*    THE SAME AS THE ONES FOR THE CREW PLACEMENT, IN ORDER
+079000*    TO MOVE FROM 1 BOARD TO ANOTHER.
+079100*
+079200     MOVE CNTL-POOL-ZAP-FLAG      TO WS-ZAP-FLAG
+079300     MOVE CNTL-POOL-CRAFTS        TO WS-SAVE-POOL-CRAFTS
+079400     MOVE CNTL-POOL-MARRIED-CODES TO WS-SAVE-POOL-MARRIED
+079500
+079600     MOVE CNTL-EN-FI    TO EN-FI-MARRIED-FLAG
+079700     IF EN-FI-MARRIED
+079800        IF CNTL-POOL-FI-CRAFT NOT = ('Y' AND 'O')
+079900           SET EN-SE-MARRIED TO TRUE
+080000        END-IF
+080100     END-IF
+080200     MOVE CNTL-CO-B1-B2 TO CO-BK-MARRIED-FLAG
+080300     IF CO-BK-MARRIED
+080400        IF CNTL-POOL-B1-CRAFT = ('Y' OR 'O')
+080500           SET CO-B1-MARRIED TO TRUE
+080600        END-IF
+080700        IF CNTL-POOL-B2-CRAFT = ('Y' OR 'O')
+080800           SET CO-B2-MARRIED TO TRUE
+080900        END-IF
+081000        IF CNTL-POOL-BG-CRAFT = ('Y' OR 'O')
+081100           SET CO-BG-MARRIED TO TRUE
+081200        END-IF
+081300     END-IF
+081400     MOVE CNTL-B1-B2    TO B1-B2-MARRIED-FLAG
+081500     MOVE CNTL-EN-ET    TO EN-ET-MARRIED-FLAG
+081600     MOVE CNTL-CO-TT    TO CO-TT-MARRIED-FLAG
+081700     IF CNTL-ALT-DIST > SPACE
+081800        AND CNTL-ALT-SUB-DIST > SPACE
+081900        IF CNTL-ALT-EN-POOL > SPACE
+082000           SET EN-ID-POOL  TO TRUE
+082100        END-IF
+082200        IF CNTL-ALT-TR-POOL > SPACE
+082300           SET TR-ID-POOL  TO TRUE
+082400        END-IF
+082500     END-IF
+082600     MOVE CNTL-POOL-REST-CODE  TO HOLD-POOL-REST-CODE
+082700     MOVE CNTL-POOL-SVC        TO POOL-SERVICE-CODE
+082800     MOVE CNTL-POOL-CYCLE-CODE TO BID-PACK-FLAG
+082900
+083000     MOVE SCR15X-BOARD              TO WS-BOARD
+083100     PERFORM P0150-EDIT-BOARD
+083200*
+083300*    MAKE SURE THE CRAFT THEY ARE INQUIRING ON IS DEFINED FOR THIS
+083400*    POOL IN THE CONTROL FILE
+083500*
+083600     IF (SCR15X-CRAFT-SEL = 'EN'
+083700           AND CNTL-POOL-EN-CRAFT = 'Y') OR
+083800        (SCR15X-CRAFT-SEL = 'FI'
+083900           AND CNTL-POOL-FI-CRAFT = ('Y' OR 'O')) OR
+084000        (SCR15X-CRAFT-SEL = 'CO'
+084100           AND CNTL-POOL-CO-CRAFT = 'Y') OR
+084200        (SCR15X-CRAFT-SEL = 'B1'
+084300           AND CNTL-POOL-B1-CRAFT = ('Y' OR 'O')) OR
+084400        (SCR15X-CRAFT-SEL = 'B2'
+084500           AND CNTL-POOL-B2-CRAFT = ('Y' OR 'O')) OR
+084600        (SCR15X-CRAFT-SEL = 'SE'
+084700           AND CNTL-POOL-SE-CRAFT = ('Y' OR 'O')) OR
+084800        (SCR15X-CRAFT-SEL = 'BG'
+084900           AND CNTL-POOL-BG-CRAFT = ('Y' OR 'O')) OR
+085000        (SCR15X-CRAFT-SEL = 'AC'
+085100           AND CNTL-POOL-AC-CRAFT = ('Y' OR 'O')) OR
+085200        (SCR15X-CRAFT-SEL = ('ET' OR 'TT')) OR
+085300         SCR15X-CRAFT-SEL NOT > SPACE
+085400          CONTINUE
+085500     ELSE
+085600        MOVE -1        TO SCR15X-CRAFT-SEL-CURSOR
+085700        MOVE REV-VIDEO TO SCR15X-CRAFT-SEL-HI
+085800*            INVALID-CRAFT-MSG
+085900        MOVE 'I011' TO MSGLOG-CODE
+086000        PERFORM P9000-SEND-MAP-AND-RETURN
+086100     END-IF
+086200*
+086300*    FORCE THE INQUIRY FOR THE 'PARENT' TURN IF THEY ARE INQUIRY
+086400*    ON ONE OF THE ASSOCIATED TURNS.
+086500*
+086600     IF SCR15X-CRAFT-SEL = ('FI' OR 'SE') AND
+086700        EN-FI-MARRIED
+086800         MOVE 'EN' TO SCR15X-CRAFT-SEL
+086900     END-IF
+087000     IF SCR15X-CRAFT-SEL = 'ET' AND
+087100        EN-ET-MARRIED
+087200         MOVE 'EN' TO SCR15X-CRAFT-SEL
+087300     END-IF
+087400     IF SCR15X-CRAFT-SEL = ('B1' OR 'B2' OR 'BG') AND
+087500        CO-BK-MARRIED
+087600         MOVE 'CO' TO SCR15X-CRAFT-SEL
+087700     END-IF
+087800     IF SCR15X-CRAFT-SEL = 'TT' AND
+087900        CO-TT-MARRIED
+088000         MOVE 'CO' TO SCR15X-CRAFT-SEL
+088100     END-IF
+088200     IF SCR15X-CRAFT-SEL = 'B2' AND
+088300        B1-B2-MARRIED
+088400         MOVE 'B1' TO SCR15X-CRAFT-SEL
+088500     END-IF
+088600
+088700     IF SCR15X-POOL         NOT = P15XCA-LAST-POOL
+088800        OR SCR15X-CRAFT-SEL NOT = P15XCA-LAST-CC
+088900        OR SCR15X-BOARD     NOT = P15XCA-LAST-BOARD
+089000        PERFORM P9830-SNAPSHOT-UFP
+089100     END-IF
+089200*
+089300*    LOAD CRAFT ARRAY
+089400*
+089500     MOVE SPACES         TO WS-CRAFT-AREA
+089600     MOVE ZEROS          TO CRAFT-ARRAY-SUB
+089700     IF SCR15X-CRAFT-SEL NOT > SPACES
+089800        MOVE SPACES      TO SCR15X-CRAFT-SEL
+089900     END-IF
+090000     IF SCR15X-CRAFT-SEL = ('EN' OR SPACES)
+090100        IF CNTL-POOL-EN-CRAFT = 'Y'
+090200           ADD 1            TO CRAFT-ARRAY-SUB
+090300           MOVE 'EN'        TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+090400           IF EN-FI-MARRIED
+090500              ADD 1         TO CRAFT-ARRAY-SUB
+090600              MOVE 'EN'     TO WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+090700              IF EN-SE-MARRIED
+090800                 MOVE 'SE'  TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+090900                 IF CNTL-POOL-SE-CRAFT = 'O'
+091000                    SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+091100                 END-IF
+091200              ELSE
+091300                 MOVE 'FI' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+091400                 IF CNTL-POOL-FI-CRAFT = 'O'
+091500                    SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+091600                 END-IF
+091700              END-IF
+091800           END-IF
+091900*                                                              PLS
+092000           ADD 1 TO CRAFT-ARRAY-SUB
+092100           MOVE 'ET' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+092200           SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+092300           IF EN-ET-MARRIED
+092400              MOVE 'EN' TO WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+092500           END-IF
+092600        END-IF
+092700     END-IF
+092800     IF SCR15X-CRAFT-SEL = ('FI' OR SPACES)
+092900        IF CNTL-POOL-FI-CRAFT = ('Y' OR 'O')
+093000           IF NOT EN-FI-MARRIED
+093100              ADD 1 TO CRAFT-ARRAY-SUB
+093200              MOVE 'FI'        TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+093300              IF CNTL-POOL-FI-CRAFT = 'O'
+093400                 SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+093500              END-IF
+093600           END-IF
+093700        END-IF
+093800     END-IF
+093900     IF SCR15X-CRAFT-SEL = ('SE' OR SPACES)
+094000        IF CNTL-POOL-SE-CRAFT = ('Y' OR 'O')
+094100           IF NOT EN-FI-MARRIED
+094200              ADD 1 TO CRAFT-ARRAY-SUB
+094300              MOVE 'SE'        TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+094400              IF CNTL-POOL-SE-CRAFT = 'O'
+094500                 SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+094600              END-IF
+094700           END-IF
+094800        END-IF
+094900     END-IF
+095000     IF SCR15X-CRAFT-SEL = 'ET'
+095100        ADD 1 TO CRAFT-ARRAY-SUB
+095200        MOVE 'ET' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+095300        SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+095400     END-IF
+095500     IF SCR15X-CRAFT-SEL = ('CO' OR SPACES)
+095600        IF CNTL-POOL-CO-CRAFT = 'Y'
+095700           ADD 1 TO CRAFT-ARRAY-SUB
+095800           MOVE 'CO'        TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+095900           IF CO-BK-MARRIED
+096000              IF CO-B1-MARRIED
+096100                 ADD 1 TO CRAFT-ARRAY-SUB
+096200                 MOVE 'B1' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+096300                 MOVE 'CO' TO WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+096400                 IF CNTL-POOL-B1-CRAFT = 'O'
+096500                    SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+096600                 END-IF
+096700              END-IF
+096800              IF CO-B2-MARRIED
+096900                 ADD 1 TO CRAFT-ARRAY-SUB
+097000                 MOVE 'B2' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+097100                 MOVE 'CO' TO WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+097200                 IF CNTL-POOL-B2-CRAFT = 'O'
+097300                    SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+097400                 END-IF
+097500              END-IF
+097600              IF CO-BG-MARRIED
+097700                 ADD 1 TO CRAFT-ARRAY-SUB
+097800                 MOVE 'BG' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+097900                 MOVE 'CO' TO WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+098000                 IF CNTL-POOL-BG-CRAFT = 'O'
+098100                    SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+098200                 END-IF
+098300              END-IF
+098400           END-IF
+098500*                                                              PLS
+098600           ADD 1 TO CRAFT-ARRAY-SUB
+098700           MOVE 'TT' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+098800           SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+098900           IF CO-TT-MARRIED
+099000              MOVE 'CO' TO WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+099100           END-IF
+099200        END-IF
+099300     END-IF
+099400     IF SCR15X-CRAFT-SEL = ('B1' OR SPACES)
+099500        IF CNTL-POOL-B1-CRAFT = ('Y' OR 'O')
+099600           IF NOT CO-BK-MARRIED
+099700              ADD 1      TO CRAFT-ARRAY-SUB
+099800              MOVE 'B1'  TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+099900              IF CNTL-POOL-B1-CRAFT =  'O'
+100000                 SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+100100              END-IF
+100200              IF B1-B2-MARRIED
+100300                 ADD 1 TO CRAFT-ARRAY-SUB
+100400                 MOVE 'B2' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+100500                 MOVE 'B1' TO WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+100600                 IF CNTL-POOL-B2-CRAFT = 'O'
+100700                    SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+100800                 END-IF
+100900              END-IF
+101000           END-IF
+101100        END-IF
+101200     END-IF
+101300     IF SCR15X-CRAFT-SEL = ('B2' OR SPACES)
+101400        IF CNTL-POOL-B2-CRAFT = ('Y' OR 'O')
+101500           IF NOT (CO-BK-MARRIED OR B1-B2-MARRIED)
+101600              ADD 1      TO CRAFT-ARRAY-SUB
+101700              MOVE 'B2'  TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+101800              IF CNTL-POOL-B2-CRAFT =  'O'
+101900                 SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+102000              END-IF
+102100           END-IF
+102200        END-IF
+102300     END-IF
+102400     IF SCR15X-CRAFT-SEL = ('BG' OR SPACES)
+102500        IF CNTL-POOL-BG-CRAFT = ('Y' OR 'O')
+102600           IF NOT CO-BG-MARRIED
+102700              ADD 1      TO CRAFT-ARRAY-SUB
+102800              MOVE 'BG'  TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+102900              IF CNTL-POOL-BG-CRAFT =  'O'
+103000                 SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+103100              END-IF
+103200           END-IF
+103300        END-IF
+103400     END-IF
+103500     IF SCR15X-CRAFT-SEL = ('AC' OR SPACES)
+103600        IF CNTL-POOL-AC-CRAFT = ('Y' OR 'O')
+103700           ADD 1 TO CRAFT-ARRAY-SUB
+103800           MOVE 'AC' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+103900           IF CNTL-POOL-AC-CRAFT = 'O'
+104000              SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+104100           END-IF
+104200        END-IF
+104300     END-IF
+104400     IF SCR15X-CRAFT-SEL = 'TT'
+104500        ADD 1 TO CRAFT-ARRAY-SUB
+104600        MOVE 'TT' TO WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+104700        SET OPTIONAL-CRAFT(CRAFT-ARRAY-SUB) TO TRUE
+104800     END-IF
+104900*
+105000*    DETERMINE USER FUNCTION
+105100*
+105200     MOVE '0' TO ERRORS-FOUND-CODE
+105300     EVALUATE TRUE
+105400        WHEN INQUIRY-REQ
+105500           PERFORM P1000-INQUIRY
+105600        WHEN CALL-ORDER-REQ
+105700           IF BID-PACK-POOL
+105800              OR SCHEDULE-POOL
+105900              PERFORM P1005-CALL-ORDER-INQ
+106000           ELSE
+106100*               'CALL ORDER INQUIRY ONLY VALID FOR BID PACK POOLS'
+106200              MOVE 'C167'       TO MSGLOG-CODE
+106300              MOVE -1 TO SCR15X-FUNCTION-CURSOR
+106400           END-IF
+106500        WHEN ADD-REQ
+106600           PERFORM P2000-ADD
+106700        WHEN REPOSITION-REQ
+106800           IF POSITION-BOARD AND NOT MINE-TURN-SVC
+106900              IF P15XCA-LAST-FUNCTION = 'R'
+107000                 AND SCR15X-POOL = P15XCA-LAST-POOL
+107100                 AND SCR15X-BOARD = P15XCA-LAST-BOARD
+107200                 AND SCR15X-CRAFT-SEL = P15XCA-LAST-CC
+107300                 AND ENTER-KEY
+107400                 PERFORM P3000-REPOSITION
+107500              ELSE
+107600                 PERFORM P1000-INQUIRY
+107700              END-IF
+107800           ELSE
+107900              IF MINE-TURN-SVC
+108000                 MOVE -1 TO SCR15X-FUNCTION-CURSOR
+108100*                   'REPOSITIONING NOT ALLOWED IN MINE '
+108200*                   'TURN POOLS'
+108300                 MOVE 'R080'     TO MSGLOG-CODE
+108400              ELSE
+108500                 MOVE -1 TO SCR15X-FUNCTION-CURSOR
+108600*                  'MUST INQUIRE ON POSITION BOARD BEFORE REPOSITI
+108700*                     'ON'
+108800                 MOVE 'M022' TO MSGLOG-CODE
+108900              END-IF
+109000           END-IF
+109100        WHEN CUT-REQ
+109200           PERFORM P4000-CUT
+109300        WHEN 2NDBK-REQ
+109400           PERFORM P5000-2ND-BRAKEMAN
+109500        WHEN TRANSFER-REQ
+109600           PERFORM P6000-TRANSFER
+109700        WHEN UFP-MOVE-REQ
+109800           IF PSTCA-USER-AUTHORITY NOT = 'H'
+109900              MOVE -1 TO SCR15X-FUNCTION-CURSOR
+110000*                  'USER NOT AUTHORIZED'
+110100              MOVE 'U003' TO MSGLOG-CODE
+110200           ELSE
+110300              IF POSITION-BOARD
+110400                 IF  P15XCA-LAST-FUNCTION = 'M'
+110500                 AND SCR15X-POOL      = P15XCA-LAST-POOL
+110600                 AND SCR15X-BOARD     = P15XCA-LAST-BOARD
+110700                 AND SCR15X-CRAFT-SEL = P15XCA-LAST-CC
+110800                 AND ENTER-KEY
+110900                    PERFORM P6500-MOVE-TURN
+111000                 ELSE
+111100                    PERFORM P1000-INQUIRY
+111200                 END-IF
+111300              ELSE
+111400                 MOVE -1 TO SCR15X-FUNCTION-CURSOR
+111500*                    'MUST INQUIRE ON POSITION BOARD BEFORE MOVE'
+111600                 MOVE 'M146' TO MSGLOG-CODE
+111700              END-IF
+111800           END-IF
+111900        WHEN BLANK-REQ
+112000           PERFORM P7000-BLANK-TURN
+112100        WHEN SCHEDULE-REQ
+112200           IF BID-PACK-POOL
+112300              OR SCHEDULE-POOL
+112400              PERFORM P7500-SCHEDULE
+112500           ELSE
+112600*               'CALL ORDER INQUIRY ONLY VALID FOR BID PACK POOLS'
+112700              MOVE 'C167'       TO MSGLOG-CODE
+112800              MOVE -1 TO SCR15X-FUNCTION-CURSOR
+112900           END-IF
+113000        WHEN OTHER
+113100           MOVE -1               TO SCR15X-FUNCTION-CURSOR
+113200           MOVE REV-VIDEO        TO SCR15X-FUNCTION-HI
+113300*               INVALID-CODE-MSG
+113400           MOVE 'I041' TO MSGLOG-CODE
+113500     END-EVALUATE.
+113600*
+113700 P0150-EDIT-BOARD.
+113800*
+113900     IF BOARD-OK
+114000        MOVE SPACES TO SCR15X-BOARD-DESC
+114100        IF TURN-BOARD
+114200           STRING CNTL-POOL-NAME
+114300                  ' IN  '
+114400                  ' TURN ORDER  '
+114500                  DELIMITED BY '  '
+114600                  INTO SCR15X-BOARD-DESC
+114700           IF SCR15X-FUNCTION = 'M'
+114800              MOVE -1           TO SCR15X-BOARD-CURSOR
+114900              MOVE REV-VIDEO    TO SCR15X-BOARD-HI
+115000*                  'TURN ORDER NOT VALID FOR MOVE FUNCTION'
+115100              MOVE 'T099'       TO MSGLOG-CODE
+115200              IF P15XCA-LAST-BOARD = 'T'
+115300                 MOVE 'T'       TO SCR15X-BOARD
+115400                 MOVE 'I'       TO SCR15X-FUNCTION
+115500              END-IF
+115600              PERFORM P9000-SEND-MAP-AND-RETURN
+115700           END-IF
+115800        ELSE
+115900           IF HOME-BOARD
+116000              STRING CNTL-POOL-NAME
+116100                     ' AT  '
+116200                     ' ' CNTL-POOL-HOME
+116300                     ' - ' CNTL-POOL-HOME-STATION
+116400                     DELIMITED BY '  '
+116500                     INTO SCR15X-BOARD-DESC
+116600           ELSE
+116700              MOVE WS-BOARD TO I
+116800              IF CNTL-AWAY-TERM(I) > SPACE
+116900                 STRING CNTL-POOL-NAME
+117000                        ' AT  '
+117100                        ' ' CNTL-AWAY-TERM(I)
+117200                        ' - ' CNTL-AWAY-STATION(I)
+117300                        DELIMITED BY '  '
+117400                        INTO SCR15X-BOARD-DESC
+117500              ELSE
+117600                 MOVE -1        TO SCR15X-BOARD-CURSOR
+117700                 MOVE REV-VIDEO TO SCR15X-BOARD-HI
+117800*                     'INVALID BOARD FOR THIS POOL'
+117900                 MOVE 'I066' TO MSGLOG-CODE
+118000                 PERFORM P9000-SEND-MAP-AND-RETURN
+118100              END-IF
+118200           END-IF
+118300        END-IF
+118400     ELSE
+118500        MOVE -1        TO SCR15X-BOARD-CURSOR
+118600        MOVE REV-VIDEO TO SCR15X-BOARD-HI
+118700*            INVALID-CODE-MSG
+118800        MOVE 'I041' TO MSGLOG-CODE
+118900        PERFORM P9000-SEND-MAP-AND-RETURN
+119000     END-IF.
+119100*
+119200 P0200-RESET-ATTRIBUTES.
+119300*
+119400     MOVE DEFAULT-ATTR TO SCR15X-FUNCTION-HI
+119500                          SCR15X-POOL-HI
+119600                          SCR15X-BOARD-HI
+119700                          SCR15X-CRAFT-SEL-HI
+119800     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+119900             UNTIL ARRAY-SUB > ARRAY-MAX
+120000        MOVE DEFAULT-ATTR TO SCR15X-SEL-HI(ARRAY-SUB)
+120100                             SCR15X-TURN-HI(ARRAY-SUB)
+120200                             SCR15X-VARIABLE-HI(ARRAY-SUB)
+120300     END-PERFORM.
+120400*
+120500 P1000-INQUIRY.
+120600*
+120700     IF REPOSITION-REQ
+120800        IF PSTCA-SUB = 1
+120900           MOVE WS-VARIABLE-LINE-2-HDR TO SCR15X-HEADER
+121000        ELSE
+121100           MOVE WS-VARIABLE-LINE-2-HDR-FRENCH TO SCR15X-HEADER
+121200        END-IF
+121300        MOVE SCR15X-FUNCTION TO P15XCA-LAST-FUNCTION
+121400     ELSE
+121500        IF UFP-MOVE-REQ
+121600           IF PSTCA-SUB = 1
+121700              MOVE WS-VARIABLE-LINE-4-HDR TO SCR15X-HEADER
+121800           ELSE
+121900              MOVE WS-VARIABLE-LINE-4-HDR-FRENCH TO SCR15X-HEADER
+122000           END-IF
+122100           MOVE SCR15X-FUNCTION TO P15XCA-LAST-FUNCTION
+122200        ELSE
+122300           MOVE 'I' TO SCR15X-FUNCTION
+122400                       P15XCA-LAST-FUNCTION
+122500           IF POSITION-BOARD
+122600              IF PSTCA-SUB = 1
+122700                 MOVE WS-VARIABLE-LINE-3-HDR TO SCR15X-HEADER
+122800              ELSE
+122900                 MOVE WS-VARIABLE-LINE-3-HDR-FRENCH
+123000                                             TO SCR15X-HEADER
+123100              END-IF
+123200           ELSE
+123300              IF PSTCA-SUB = 1
+123400                 MOVE WS-VARIABLE-LINE-1-HDR TO SCR15X-HEADER
+123500              ELSE
+123600                 MOVE WS-VARIABLE-LINE-1-HDR-FRENCH
+123700                                             TO SCR15X-HEADER
+123800              END-IF
+123900           END-IF
+124000        END-IF
+124100     END-IF
+124200*
+124300     PERFORM P1010-INITIALIZE-CRAFT-ARRAY
+124400*
+124500*    DETERMINE IF THIS IS A VALID SCROLL, AND IF SO LOAD
+124600*    THE UFP TURN KEY WE SAVED OFF IN THE COMMAREA SO WE
+124700*    CAN SETUP FOR NEXT RECORD.
+124800*
+124900     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+125000        UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+125100        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACE
+125200           MOVE WS-CRAFT-MAX(CRAFT-ARRAY-SUB) TO K
+125300           IF PFKEY8
+125400              AND SCR15X-POOL = P15XCA-LAST-POOL
+125500              AND SCR15X-BOARD = P15XCA-LAST-BOARD
+125600              AND SCR15X-CRAFT-SEL = P15XCA-LAST-CC
+125700              AND P15XCA-TURN-KEY(K) > SPACE
+125800              MOVE P15XCA-TURN-KEY(K)
+125900                 TO WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+126000           ELSE
+126100              MOVE ZEROS TO P15XCA-HOLD-POS(CRAFT-ARRAY-SUB)
+126200              MOVE SPACES TO WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+126300           END-IF
+126400        ELSE
+126500           MOVE ZEROS TO P15XCA-HOLD-POS(CRAFT-ARRAY-SUB)
+126600           MOVE SPACES TO WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+126700        END-IF
+126800     END-PERFORM
+126900*
+127000*    CLEAR OUT THE SCREEN ARRAY AND THE UFPTURN KEY ARRAY IN THE
+127100*    COMMAREA
+127200*
+127300     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+127400             UNTIL ARRAY-SUB > ARRAY-MAX
+127500        MOVE SPACES TO SCR15X-SEL(ARRAY-SUB)
+127600                       SCR15X-CC(ARRAY-SUB)
+127700                       SCR15X-TURN(ARRAY-SUB)
+127800                       SCR15X-I-O(ARRAY-SUB)
+127900                       SCR15X-POS(ARRAY-SUB)
+128000                       SCR15X-NAME(ARRAY-SUB)
+128100                       SCR15X-LO(ARRAY-SUB)
+128200                       SCR15X-VARIABLE(ARRAY-SUB)
+128300        MOVE AUTOSKIP-MDT TO SCR15X-SEL-ATTR(ARRAY-SUB)
+128400                             SCR15X-TURN-ATTR(ARRAY-SUB)
+128500                             SCR15X-VARIABLE-ATTR(ARRAY-SUB)
+128600        IF ENTER-KEY
+128700           OR SCR15X-POOL NOT = P15XCA-LAST-POOL
+128800           OR SCR15X-BOARD NOT = P15XCA-LAST-BOARD
+128900           OR SCR15X-CRAFT-SEL NOT = P15XCA-LAST-CC
+129000           MOVE SPACES TO P15XCA-TURN-KEY(ARRAY-SUB)
+129100        END-IF
+129200     END-PERFORM
+129300*
+129400*    LOAD NEW CRAFT ARRAY ON SCREEN
+129500*
+129600     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+129700             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+129800        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACES
+129900           MOVE WS-CRAFT-SUB(CRAFT-ARRAY-SUB) TO ARRAY-SUB
+130000           MOVE '0' TO DONE-CODE
+130100           PERFORM UNTIL DONE
+130200              MOVE WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+130300                 TO SCR15X-CC(ARRAY-SUB)
+130400*
+130500*             UNPROTECT THE CRAFTS THAT ARE ELIGIBLE FOR 'UPDATE'
+130600*
+130700              IF (REPOSITION-REQ OR UFP-MOVE-REQ)
+130800                 AND WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB) > SPACES
+130900                 CONTINUE
+131000              ELSE
+131100                 MOVE MDT TO SCR15X-SEL-ATTR(ARRAY-SUB)
+131200                 IF REPOSITION-REQ
+131300                 OR UFP-MOVE-REQ
+131400                    MOVE MDT   TO SCR15X-VARIABLE-ATTR(ARRAY-SUB)
+131500                    MOVE WHITE TO SCR15X-VARIABLE-COLOR(ARRAY-SUB)
+131600                 ELSE
+131700                    MOVE MDT   TO SCR15X-TURN-ATTR(ARRAY-SUB)
+131800                    MOVE CYAN  TO SCR15X-VARIABLE-COLOR(ARRAY-SUB)
+131900                 END-IF
+132000              END-IF
+132100              PERFORM VARYING CT-IND FROM 1 BY 1
+132200                 UNTIL CT-IND > WS-CRAFT-TABLE-MAX
+132300                 IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+132400                    = CT-CRAFT-CODE(CT-IND)
+132500                    MOVE CT-CRAFT-COLOR(CT-IND)
+132600                       TO SCR15X-CC-COLOR(ARRAY-SUB)
+132700                          SCR15X-I-O-COLOR(ARRAY-SUB)
+132800                          SCR15X-POS-COLOR(ARRAY-SUB)
+132900                          SCR15X-NAME-COLOR(ARRAY-SUB)
+133000*CNC0564A - BEG
+133100                          SCR15X-LO-COLOR(ARRAY-SUB)
+133200                    MOVE WHITE TO SCR15X-TURN-COLOR(ARRAY-SUB)
+133300*CNC0564A - END
+133400                    SET CT-IND TO WS-CRAFT-TABLE-MAX
+133500                 END-IF
+133600              END-PERFORM
+133700              ADD CRAFT-SUB-INCREMENT TO ARRAY-SUB
+133800              IF ARRAY-SUB > WS-CRAFT-MAX(CRAFT-ARRAY-SUB)
+133900                 SET DONE TO TRUE
+134000              END-IF
+134100           END-PERFORM
+134200        END-IF
+134300     END-PERFORM
+134400*
+134500*    BEGIN PROCESSING
+134600*
+134700     MOVE ZEROS TO ARRAY-SUB
+134800     IF POSITION-BOARD
+134900        PERFORM P1020-INQUIRE-BY-POSITION
+135000     ELSE
+135100        PERFORM P1030-INQUIRE-BY-TURN
+135200     END-IF
+135300     MOVE SCR15X-FUNCTION       TO P15XCA-LAST-FUNCTION
+135400     MOVE SCR15X-POOL           TO P15XCA-LAST-POOL
+135500     MOVE SCR15X-BOARD          TO P15XCA-LAST-BOARD
+135600     MOVE SCR15X-CRAFT-SEL      TO P15XCA-LAST-CC
+135700*         'END OF POOL LISTING'
+135800     MOVE 'E007' TO MSGLOG-CODE
+135900     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+136000             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+136100        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACE
+136200           AND NOT WS-CRAFT-DONE(CRAFT-ARRAY-SUB)
+136300           IF WS-CRAFT-SUB(CRAFT-ARRAY-SUB)
+136400              > WS-CRAFT-MAX(CRAFT-ARRAY-SUB)
+136500              MOVE SPACES              TO SCR15X-ERRORMSG
+136600                                          MSGLOG-CODE
+136700           ELSE
+136800              MOVE WS-CRAFT-MAX(CRAFT-ARRAY-SUB) TO K
+136900              MOVE 'DONE' TO P15XCA-TURN-KEY(K)
+137000           END-IF
+137100        END-IF
+137200     END-PERFORM
+137300     MOVE -1 TO SCR15X-FUNCTION-CURSOR.
+137400*
+137500 P1005-CALL-ORDER-INQ.
+137600*
+137700*CNC0564A - BEG
+137800*06/19/15 - BEG
+137900     MOVE CNTL-POOL-HOME-LEAD-TIME   TO WS-POOL-HOME-LEAD-TIME
+137910*06/19/15 - END
+137911     PERFORM P8040-GET-CREW-PROFILE-REC
+137912     MOVE CNTL-3A-BIDPK-TIEBRK-FL    TO WS-3A-BIDPK-TIEBRK-FL
+137913*CNC0564A - END
+137914     IF SCR15X-START-DATE > SPACES
+137915        SET DE-YYMMDD-FORMAT         TO TRUE
+137916        MOVE SCR15X-START-DATE       TO DE-YYMMDD
+137917        PERFORM P8998-DATEEDIT
+137918        IF DE-INVALID-DATE
+137919           MOVE -1                   TO SCR15X-START-DATE-CURSOR
+137920           MOVE REV-VIDEO            TO SCR15X-START-DATE-HI
+137930*             'INVALID DATE'
+137940           MOVE 'I042'               TO MSGLOG-CODE
+137950           PERFORM P9000-SEND-MAP-AND-RETURN
+137960        END-IF
+137970        MOVE DE-CCYYMMDD             TO HOLD-START-DATE
+137980
+137990        IF SCR15X-START-TIME NOT > SPACES
+138000           MOVE '0001'               TO SCR15X-START-TIME
+138100                                        HOLD-START-TIME
+138200        ELSE
+138300           MOVE SCR15X-START-TIME    TO TE-MILITARY-TIME
+138400           SET TE-MILITARY-FORMAT    TO TRUE
+138500           PERFORM P8997-TIMEEDIT
+138600           IF TE-INVALID-TIME
+138700              MOVE -1                TO SCR15X-START-TIME-CURSOR
+138800              MOVE REV-VIDEO         TO SCR15X-START-TIME-HI
+138900*                  INVALID-TIME-MSG
+139000              MOVE 'I022'            TO MSGLOG-CODE
+139100              PERFORM P9000-SEND-MAP-AND-RETURN
+139200           END-IF
+139300           MOVE SCR15X-START-TIME    TO HOLD-START-TIME
+139400        END-IF
+139500     ELSE
+139600        MOVE WS-LOCAL-DATE-TIME-CENT TO HOLD-START-DATE-TIME
+139700        MOVE WS-LOCAL-DATE           TO SCR15X-START-DATE
+139800        MOVE WS-LOCAL-TIME           TO SCR15X-START-TIME
+139900     END-IF
+140000
+140100     MOVE SCR15X-FUNCTION            TO P15XCA-LAST-FUNCTION
+140200*CNC0564A - 04/29/15 - BEG
+140300***  IF PSTCA-SUB = 1
+140400***     MOVE WS-VARIABLE-LINE-5-HDR  TO SCR15X-HEADER
+140500***  ELSE
+140600***     MOVE WS-VARIABLE-LINE-5-HDR-FRENCH
+140700***                                  TO SCR15X-HEADER
+140800***  END-IF
+140900     IF WS-3A-BIDPK-TIEBRK-PW-BRD
+141000        IF PSTCA-SUB = 1
+141100           MOVE WS-VARIABLE-LINE-6-HDR
+141200                                     TO SCR15X-HEADER
+141300        ELSE
+141400           MOVE WS-VARIABLE-LINE-6-HDR-FRENCH
+141500                                     TO SCR15X-HEADER
+141600        END-IF
+141700     ELSE
+141800        IF PSTCA-SUB = 1
+141900           MOVE WS-VARIABLE-LINE-5-HDR
+142000                                     TO SCR15X-HEADER
+142100        ELSE
+142110           MOVE WS-VARIABLE-LINE-5-HDR-FRENCH
+142120                                     TO SCR15X-HEADER
+142130        END-IF
+142131     END-IF
+142132*CNC0564A - 04/29/15 - END
+142133*
+142134     PERFORM P1010-INITIALIZE-CRAFT-ARRAY
+142135*
+142136*    DETERMINE IF THIS IS A VALID SCROLL, AND IF SO LOAD
+142137*    THE UFP TURN KEY WE SAVED OFF IN THE COMMAREA SO WE
+142138*    CAN SETUP FOR NEXT RECORD.
+142139*
+142140     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+142150        UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+142160        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACE
+142170           MOVE WS-CRAFT-MAX(CRAFT-ARRAY-SUB) TO K
+142180           IF PFKEY8
+142190              AND SCR15X-POOL = P15XCA-LAST-POOL
+142200              AND SCR15X-BOARD = P15XCA-LAST-BOARD
+142300              AND SCR15X-CRAFT-SEL = P15XCA-LAST-CC
+142400              AND P15XCA-TURN-KEY(K) > SPACE
+142500              MOVE P15XCA-TURN-KEY(K)
+142600                          TO WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+142700              IF P15XCA-CALL-ORDER-KEY(K) > SPACES
+142800                 MOVE P15XCA-CALL-ORDER-KEY(K)
+142900                          TO WS-CALL-ORDER-KEY(CRAFT-ARRAY-SUB)
+143000              END-IF
+143100           ELSE
+143200              MOVE ZEROS  TO P15XCA-HOLD-POS(CRAFT-ARRAY-SUB)
+143300              MOVE SPACES TO WS-CALL-ORDER-KEY(CRAFT-ARRAY-SUB)
+143400                             WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+143500           END-IF
+143600        ELSE
+143700           MOVE ZEROS     TO P15XCA-HOLD-POS(CRAFT-ARRAY-SUB)
+143800           MOVE SPACES    TO WS-CALL-ORDER-KEY(CRAFT-ARRAY-SUB)
+143900                             WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+144000        END-IF
+144100     END-PERFORM
+144200*
+144300*    CLEAR OUT THE SCREEN ARRAY AND THE UFPTURN KEY ARRAY IN THE
+144400*    COMMAREA
+144500*
+144600     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+144700             UNTIL ARRAY-SUB > ARRAY-MAX
+144800        MOVE SPACES TO SCR15X-SEL(ARRAY-SUB)
+144900                       SCR15X-CC(ARRAY-SUB)
+145000                       SCR15X-TURN(ARRAY-SUB)
+145100                       SCR15X-I-O(ARRAY-SUB)
+145200                       SCR15X-POS(ARRAY-SUB)
+145300                       SCR15X-NAME(ARRAY-SUB)
+145400                       SCR15X-LO(ARRAY-SUB)
+145500                       SCR15X-VARIABLE(ARRAY-SUB)
+145600        MOVE AUTOSKIP-MDT TO SCR15X-SEL-ATTR(ARRAY-SUB)
+145700                             SCR15X-TURN-ATTR(ARRAY-SUB)
+145800                             SCR15X-VARIABLE-ATTR(ARRAY-SUB)
+145900        IF ENTER-KEY
+146000           OR SCR15X-POOL NOT = P15XCA-LAST-POOL
+146100           OR SCR15X-BOARD NOT = P15XCA-LAST-BOARD
+146200           OR SCR15X-CRAFT-SEL NOT = P15XCA-LAST-CC
+146300           MOVE SPACES TO P15XCA-CALL-ORDER-KEY(ARRAY-SUB)
+146400                          P15XCA-TURN-KEY(ARRAY-SUB)
+146500        END-IF
+146600     END-PERFORM
+146700*
+146800*    LOAD NEW CRAFT ARRAY ON SCREEN
+146900*
+147000     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+147100             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+147200        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACES
+147300           MOVE WS-CRAFT-SUB(CRAFT-ARRAY-SUB) TO ARRAY-SUB
+147400           MOVE '0' TO DONE-CODE
+147500           PERFORM UNTIL DONE
+147600              MOVE WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+147700                               TO SCR15X-CC(ARRAY-SUB)
+147800              MOVE MDT         TO SCR15X-SEL-ATTR(ARRAY-SUB)
+147900              MOVE MDT         TO SCR15X-TURN-ATTR(ARRAY-SUB)
+148000              MOVE CYAN        TO SCR15X-VARIABLE-COLOR(ARRAY-SUB)
+148100              PERFORM VARYING CT-IND FROM 1 BY 1
+148200                 UNTIL CT-IND > WS-CRAFT-TABLE-MAX
+148300                 IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+148400                    = CT-CRAFT-CODE(CT-IND)
+148500                    MOVE CT-CRAFT-COLOR(CT-IND)
+148600                       TO SCR15X-CC-COLOR(ARRAY-SUB)
+148700                          SCR15X-I-O-COLOR(ARRAY-SUB)
+148800                          SCR15X-POS-COLOR(ARRAY-SUB)
+148900                          SCR15X-NAME-COLOR(ARRAY-SUB)
+149000*CNC0564A - BEG
+149100                          SCR15X-LO-COLOR(ARRAY-SUB)
+149200                    MOVE WHITE TO SCR15X-TURN-COLOR(ARRAY-SUB)
+149300*CNC0564A - END
+149400                    SET CT-IND TO WS-CRAFT-TABLE-MAX
+149500                 END-IF
+149600              END-PERFORM
+149700              ADD CRAFT-SUB-INCREMENT TO ARRAY-SUB
+149800              IF ARRAY-SUB > WS-CRAFT-MAX(CRAFT-ARRAY-SUB)
+149900                 SET DONE TO TRUE
+150000              END-IF
+150100           END-PERFORM
+150200        END-IF
+150300     END-PERFORM
+150400*
+150500*    BEGIN PROCESSING
+150600*
+150700     MOVE ZEROS                 TO ARRAY-SUB
+150800     PERFORM P1025-INQ-CALL-ORDER-POS
+150900     MOVE SCR15X-FUNCTION       TO P15XCA-LAST-FUNCTION
+151000     MOVE SCR15X-POOL           TO P15XCA-LAST-POOL
+151100     MOVE SCR15X-BOARD          TO P15XCA-LAST-BOARD
+151200     MOVE SCR15X-CRAFT-SEL      TO P15XCA-LAST-CC
+151300*       'NO SCHEDULES FOUND FOR 'STARTING AT' DATE/TIME'
+151400     MOVE 'N171'                TO MSGLOG-CODE
+151500     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+151600        UNTIL ARRAY-SUB > ARRAY-MAX
+151700        IF SCR15X-TURN(ARRAY-SUB) > SPACES
+151800*               'END OF POOL LISTING'
+151900           MOVE 'E007' TO MSGLOG-CODE
+152000           MOVE ARRAY-MAX       TO ARRAY-SUB
+152100        END-IF
+152200     END-PERFORM
+152300     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+152400             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+152500        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACE
+152600           AND NOT WS-CRAFT-DONE(CRAFT-ARRAY-SUB)
+152700           IF WS-CRAFT-SUB(CRAFT-ARRAY-SUB)
+152800              > WS-CRAFT-MAX(CRAFT-ARRAY-SUB)
+152900              MOVE SPACES              TO SCR15X-ERRORMSG
+153000                                          MSGLOG-CODE
+153100           ELSE
+153200              MOVE WS-CRAFT-MAX(CRAFT-ARRAY-SUB) TO K
+153300              MOVE 'DONE' TO P15XCA-TURN-KEY(K)
+153400           END-IF
+153500        END-IF
+153600     END-PERFORM
+153700     MOVE -1 TO SCR15X-FUNCTION-CURSOR.
+153800*
+153900 P1010-INITIALIZE-CRAFT-ARRAY.
+154000*
+154100*    FIND OUT HOW MANY CRAFT CODES WE ARE DISPLAYING
+154200*    AND INITIALIZE THE ARRAY
+154300*
+154400     MOVE ZEROS TO CRAFT-SUB-INCREMENT
+154500     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+154600             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+154700        MOVE ZERO TO WS-CRAFT-SUB(CRAFT-ARRAY-SUB)
+154800                     WS-CRAFT-MAX(CRAFT-ARRAY-SUB)
+154900        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACE
+155000           MOVE CRAFT-ARRAY-SUB TO WS-CRAFT-SUB(CRAFT-ARRAY-SUB)
+155100                                   CRAFT-SUB-INCREMENT
+155200        END-IF
+155300     END-PERFORM
+155400*
+155500*    IF WE ARE DISPLAYING MORE THAN 1, ADD 1 TO THE INCREMENT
+155600*    TO 'SKIP' A LINE BETWEEN EACH 'GROUP'.
+155700*
+155800     IF CRAFT-SUB-INCREMENT > 1
+155900        ADD 1 TO CRAFT-SUB-INCREMENT
+156000     END-IF
+156100*
+156200*    COMPUTE THE LAST POSSIBLE SCREEN POSITION FOR ANY
+156300*    'WHOLE' GROUP
+156400*
+156500     COMPUTE GROUP-MAX = (ARRAY-MAX + 1) / CRAFT-SUB-INCREMENT
+156600                         * CRAFT-SUB-INCREMENT - 1
+156700*
+156800     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+156900             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+157000*
+157100*       COMPUTE THE MAXIMUM SCREEN POSITION FOR EACH INDIVIDUAL
+157200*       CRAFT CODE TO ENABLE TESTING FOR 'DONE'.
+157300*
+157400        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACE
+157500           MOVE WS-CRAFT-SUB(CRAFT-ARRAY-SUB)
+157600              TO WS-CRAFT-MAX(CRAFT-ARRAY-SUB)
+157700           MOVE '0' TO DONE-CODE
+157800           PERFORM UNTIL DONE
+157900              MOVE WS-CRAFT-MAX(CRAFT-ARRAY-SUB) TO K
+158000              ADD CRAFT-SUB-INCREMENT TO K
+158100              IF K NOT > ARRAY-MAX
+158200                 AND K NOT > GROUP-MAX
+158300                 MOVE K TO WS-CRAFT-MAX(CRAFT-ARRAY-SUB)
+158400              ELSE
+158500                 SET DONE TO TRUE
+158600              END-IF
+158700           END-PERFORM
+158800        END-IF
+158900     END-PERFORM.
+159000*
+159100 P1020-INQUIRE-BY-POSITION.
+159200*
+159300     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+159400             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+159500        MOVE CRAFT-ARRAY-SUB TO CC-ARRAY-SUB
+159600        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACES
+159700           AND NOT WS-CRAFT-DONE(CRAFT-ARRAY-SUB)
+159800           AND WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB) NOT > SPACES
+159900           MOVE SPACES TO WS-UFP-POS-KEY
+160000           MOVE SCR15X-DIST TO WS-UFP-POS-DIST
+160100           MOVE SCR15X-SUB-DIST TO WS-UFP-POS-SUB-DIST
+160200           MOVE SCR15X-POOL TO WS-UFP-POS-POOL
+160300           MOVE WS-CRAFT-CODE(CRAFT-ARRAY-SUB) TO WS-UFP-POS-CC
+160400           MOVE SCR15X-BOARD TO WS-UFP-POS-IN-OUT
+160500           IF WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB) > SPACES
+160600              MOVE WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+160700                 TO UFPTURN
+160800              PERFORM P8600-READ-UFPTURN
+160900              IF NOT SUCCESS
+161000                 MOVE 'P1020-1' TO ERR-PARAGRAPH
+161100                 MOVE UFPTURN   TO ERR-KEY
+161200                 PERFORM P9999-GOT-PROBLEM
+161300              END-IF
+161400              MOVE UFP-POS TO WS-KEY-POS
+161500           ELSE
+161600              MOVE ZEROS TO WS-KEY-POS
+161700              IF MINE-TURN-SVC
+161800                 MOVE SPACES    TO WS-KEY-POS-DATE-TIME
+161900              END-IF
+162000           END-IF
+162100           MOVE ZERO TO DONE-CODE
+162200           PERFORM UNTIL DONE
+162300              MOVE 0 TO ASSOCIATED-TURN-FLAG
+162400              IF WS-KEY-POS-TIE-BREAK = 9999
+162500                 SET DONE       TO TRUE
+162600              END-IF
+162700              ADD  1 TO WS-KEY-POS-TIE-BREAK
+162800              MOVE WS-UFP-POS-KEY TO UFPPOS
+162900              PERFORM P1110-READ-NEXT-POS
+163000              IF SUCCESS
+163100                 AND NOT DONE
+163200                 SET DE-YYMMDD-FORMAT        TO TRUE
+163300                 MOVE UFP-POS-DATE-TIME(1:6) TO DE-YYMMDD
+163400                 PERFORM P8998-DATEEDIT
+163500                 MOVE DE-CCYYMMDD            TO DE-COMPARE1-DATE
+163600                 MOVE UFP-POS-DATE-TIME(7:4) TO DE-COMPARE1-TIME
+163700                 IF DIST OF WS-UFP = SCR15X-DIST
+163800                    AND SUB-DIST OF WS-UFP = SCR15X-SUB-DIST
+163900                    AND POOL-NAME OF WS-UFP = SCR15X-POOL
+164000                    AND POOL-CRAFT-CODE
+164100                        = WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+164200                    AND IN-OUT-TOWN-FLAG = WS-UFP-POS-IN-OUT
+164300                    AND UFP-ON-BOARD
+164400                    AND ((ENGINE-POOL-CRAFT AND EN-ID-POOL)
+164500                       OR (TRAIN-POOL-CRAFT AND TR-ID-POOL)
+164600                       OR MINE-TURN-SVC
+164700*                      OR UFP-POS-DATE-TIME
+164800*                         NOT > PRESENT-TIME)
+164900                       OR DE-COMPARE1-DATE-TIME
+165000                          NOT > WS-PRESENT-TIME-CENT)
+165100                       OR WS-SYSTEM-DATE = '991231' OR '000101'
+165200                    MOVE UFPPOS-AREA TO WS-UFP-POS-KEY
+165300*CNC0499 - MFO - TESTING - BEG
+165400                    MOVE UFPTURN-AREA TO WS-SV-UFPTURN-AREA
+165500*CNC0499 - MFO - TESTING - END
+165600                    PERFORM P1500-SETUP-NAME-LINE
+165700                    PERFORM P1400-CHECK-ASSOCIATED-TURNS
+165800                 ELSE
+165900                    SET DONE TO TRUE
+166000                 END-IF
+166100              ELSE
+166200                 SET DONE TO TRUE
+166300              END-IF
+166400           END-PERFORM
+166500        END-IF
+166600     END-PERFORM.
+166700*
+166800 P1025-INQ-CALL-ORDER-POS.
+166900*
+167000*    THE FOLLOWING PERFORM STATEMENT WILL LOAD UP ALL OF THE
+167100*    TURNS FOR ALL OF THE PERTINENT CRAFTS INTO A WORKING
+167200*    STORAGE ARRAY.  THE TURNS FOR EACH CRAFT WILL BE SORTED
+167300*    BY 'SCHEDULE START DTTM/CALL ORDER/BOARD DTTM'.
+167400*
+167500     INITIALIZE WS-CALL-ORDER-CRAFT-AREA
+167600     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+167700             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+167800        MOVE CRAFT-ARRAY-SUB            TO CC-ARRAY-SUB
+167900        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACES
+168000           AND NOT WS-CRAFT-DONE(CRAFT-ARRAY-SUB)
+168100           AND WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB) NOT > SPACES
+168200           MOVE SPACES                  TO WS-SCHED
+168300           MOVE SCR15X-DIST             TO SCHED2-DIST
+168400           MOVE SCR15X-SUB-DIST         TO SCHED2-SUB-DIST
+168500           MOVE SCR15X-POOL             TO SCHED2-BOARD-ID
+168600           MOVE WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+168700                                        TO SCHED2-CC
+168800           MOVE ZEROES                  TO DATE-CONVERSION-PARMS
+168900           SET PARM-SUBTRACT            TO TRUE
+169000           MOVE HOLD-START-DATE(3:6)    TO PARM-PRI-DATE-GREG
+169100           MOVE '000001'                TO PARM-SEC-DATE-GREG
+169200           EXEC CICS LINK
+169300                     PROGRAM(P903-PGM)
+169400                     COMMAREA(DATE-CONVERSION-PARMS)
+169500                     LENGTH(P903-LGTH)
+169600                     RESP(WS-RESPONSE)
+169700           END-EXEC
+169800           MOVE WS-RESPONSE             TO FILE-STATUS
+169900           IF NOT SUCCESS
+170000              MOVE 'P1025-1'            TO ERR-PARAGRAPH
+170100              MOVE 'P903'               TO ERR-KEY
+170200              PERFORM P9999-GOT-PROBLEM
+170300           END-IF
+170400           MOVE PARM-RES-DATE-GREG      TO SCHED2-START-YYMMDD
+170500           MOVE PARM-RES-GREG-CENT      TO SCHED2-START-CE
+170600           MOVE HOLD-START-TIME         TO SCHED2-START-TIME
+170700           MOVE SCHED-KEY2              TO SCHEDKEY2
+170800           SET NOT-DONE                 TO TRUE
+170900           PERFORM P8710-STARTBR-SCHEDKEY2
+171000           IF NOT SUCCESS
+171100              SET DONE                  TO TRUE
+171200           END-IF
+171300           MOVE 0                       TO S1
+171400           PERFORM UNTIL DONE
+171500              MOVE 0                    TO ASSOCIATED-TURN-FLAG
+171600              PERFORM P8720-READNEXT-SCHEDKEY2
+171700              IF SUCCESS
+171800                 IF SCHED1-DIST          = SCR15X-DIST
+171900                    AND SCHED1-SUB-DIST  = SCR15X-SUB-DIST
+172000                    AND SCHED1-BOARD-ID  = SCR15X-POOL
+172100                    AND SCHED1-CC = WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+172200                    PERFORM P1026-VALIDATE-TURN
+172300                    IF DISPLAY-TURN
+172400*CNC0564A - BEG
+172500                    OR DISPLAY-TURN-RD-RED
+172600*CNC0564A - END
+172700                       PERFORM P8400-LOAD-CALL-ORDER-ARRAY
+172800                    ELSE
+172900                       IF DONT-DISPLAY-STOP
+173000                          SET DONE TO TRUE
+173100                       END-IF
+173200                    END-IF
+173300                 ELSE
+173400                    SET DONE TO TRUE
+173500                 END-IF
+173600              ELSE
+173700                 SET DONE TO TRUE
+173800              END-IF
+173900           END-PERFORM
+174000           PERFORM P8730-ENDBR-SCHEDKEY2
+174100        END-IF
+174200     END-PERFORM
+174300*
+174400*    NOW WE'VE GOT ALL OF THE TURNS SORTED IN THE RIGHT ORDER,
+174500*    SO LOAD THEM ONTO THE SCREEN BY READING THROUGH OUR
+174600*    ARRAY, BY CRAFT.
+174700*
+174800     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+174900             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+175000        MOVE CRAFT-ARRAY-SUB            TO CC-ARRAY-SUB
+175100        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACES
+175200           AND NOT WS-CRAFT-DONE(CRAFT-ARRAY-SUB)
+175300           AND WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB) NOT > SPACES
+175400*
+175500*          'S1' INDEXES THE CRAFT ARRAY
+175600*          'S2' INDEXES THE TURNS ARRAY WITHIN THE CRAFT ARRAY
+175700*
+175800           MOVE CRAFT-ARRAY-SUB         TO S1
+175900           IF WS-CALL-ORDER-KEY(S1) > SPACES
+176000*
+176100*             WHEN PAGING, FIND THE LAST ENTRY WE DISPLAYED
+176200*             FROM OUR ARRAY, BASED ON THE CALL-ORDER-KEY.
+176300*             IF THAT ENTRY NO LONGER EXISTS, LOOK FOR THE
+176400*             NEXT GREATEST KEY VALUE AND START DISPLAYING
+176500*             FROM THAT POINT.
+176600*
+176700              SET COT-NOT-DONE          TO TRUE
+176800              PERFORM VARYING S2 FROM 1 BY 1
+176900                      UNTIL COT-DONE
+177000                         OR S2 = COT-ARRAY-MAX
+177100                 IF WS-CO-TURN-ARRAY(S1, S2) > SPACES
+177200*CNC0564A - BEG
+177300                    IF WS-3A-BIDPK-TIEBRK-PW-BRD
+177400                       IF WS-COT-BOARD-DATE-TIME-TIE(S1, S2) >=
+177410                          WS-CO-POSITION(S1)
+177420                          SET COT-DONE     TO TRUE
+177421                          IF WS-COT-BOARD-DATE-TIME-TIE(S1, S2) >
+177422                             WS-CO-POSITION(S1)
+177423                             SUBTRACT 1  FROM S2
+177424                          END-IF
+177425                       END-IF
+177426                    ELSE
+177427                       IF WS-COT-KEY(S1, S2) >=
+177428                          WS-CALL-ORDER-KEY(S1)
+177429                          SET COT-DONE     TO TRUE
+177430                          IF WS-COT-KEY(S1, S2) >
+177440                             WS-CALL-ORDER-KEY(S1)
+177450                             SUBTRACT 1  FROM S2
+177460                          END-IF
+177470                       END-IF
+177480                    END-IF
+177490*CNC0564A - END
+177500                 ELSE
+177600*
+177700*                   WE DIDN'T FIND A STARTING POINT, SO START
+177800*                   DISPLAYING FROM THE BEGINNING OF THE ARRAY.
+177900*                   SETTING 'S2' TO 0 WILL ACCOMPLISH THIS, AS
+178000*                   IT WILL BE INCREMENTED BY 1 UPON EXITING
+178100*                   THIS PERFORM LOOP.
+178200*
+178300                    SET COT-DONE        TO TRUE
+178400                    MOVE 0              TO S2
+178500                 END-IF
+178600              END-PERFORM
+178700           ELSE
+178800              MOVE 1                    TO S2
+178900           END-IF
+179000           SET NOT-DONE                 TO TRUE
+179100           PERFORM VARYING S2 FROM S2 BY 1
+179200                   UNTIL DONE
+179300              IF WS-CO-TURN-ARRAY(S1, S2) > SPACES
+179400*CNC0564A - BEG
+179500                 SET TURN-IS-SCHEDULED  TO TRUE
+179600*CNC0564A - END
+179700                 MOVE SPACES            TO WS-SCHED
+179800                 MOVE WS-COT-SCHEDKEY1(S1, S2)
+179900                                        TO SCHEDKEY1
+180000                 PERFORM P8025-READ-SCHED
+180100                 MOVE SPACES            TO UFPTURN-AREA
+180200                 MOVE SCHED1-DIST       TO DIST2
+180300                 MOVE SCHED1-SUB-DIST   TO SUB-DIST2
+180400                 MOVE SCHED1-BOARD-ID   TO POOL-NAME2
+180500                 MOVE SCHED1-TURN-ID    TO TURN-NBR
+180600                 MOVE SCHED1-CC         TO POOL-CRAFT-CODE2
+180700                 MOVE UFPTURN-AREA      TO UFPTURN
+180800                 PERFORM P8600-READ-UFPTURN
+180900                 IF NOT SUCCESS
+181000                    MOVE 'P1025-2'      TO ERR-PARAGRAPH
+181100                    MOVE UFPTURN        TO ERR-KEY
+181200                    PERFORM P9999-GOT-PROBLEM
+181300                 END-IF
+181400*CNC0564A - BEG
+181500                 IF WS-TURN-PROTECTED-NO(S1, S2)
+181600                    SET TURN-IS-NOT-SCHEDULED TO TRUE
+181700                 END-IF
+181800*CNC0564A - END
+181900                 PERFORM P1500-SETUP-NAME-LINE
+181910*CNC0499 - MFO - TESTING - BEG
+181920                 MOVE UFPTURN-AREA      TO WS-SV-UFPTURN-AREA
+181930*CNC0499 - MFO - TESTING - END
+181940                 PERFORM P1400-CHECK-ASSOCIATED-TURNS
+181950              ELSE
+181960                 SET DONE               TO TRUE
+181970              END-IF
+181980           END-PERFORM
+181990        END-IF
+182000     END-PERFORM
+182100     .
+182200*
+182300 P1026-VALIDATE-TURN.
+182400*
+182500     SET DISPLAY-TURN          TO TRUE
+182600     IF SCHED-REJECT-MARKED
+182700        SET DONT-DISPLAY-TURN   TO TRUE
+182800     END-IF
+182900
+183000     IF SCHED1-STATS
+183100        SET DONT-DISPLAY-TURN   TO TRUE
+183200     END-IF
+183300*
+183400*    MAKE SURE THE SCHEDULE STARTS WITHIN 24 HOURS
+183500*
+183600     IF DISPLAY-TURN
+183700        MOVE ZEROES            TO DATE-CONVERSION-PARMS
+183800        SET PARM-DIFF          TO TRUE
+183900        MOVE SCHED1-START-YYMMDD TO PARM-PRI-DATE-GREG
+184000        MOVE SCHED1-START-TIME TO PARM-PRI-HRMN
+184100        IF PARM-PRI-HRMN = '0000'
+184200           MOVE '0001'         TO PARM-PRI-HRMN
+184300        END-IF
+184400        MOVE SCR15X-START-DATE TO PARM-SEC-DATE-GREG
+184500        MOVE SCR15X-START-TIME TO PARM-SEC-TIME
+184600        EXEC CICS LINK
+184700                  PROGRAM(P903-PGM)
+184800                  COMMAREA(DATE-CONVERSION-PARMS)
+184900                  LENGTH(P903-LGTH)
+185000                  RESP(WS-RESPONSE)
+185100        END-EXEC
+185200        MOVE WS-RESPONSE        TO FILE-STATUS
+185300        IF NOT SUCCESS
+185400           MOVE 'P1026-1'       TO ERR-PARAGRAPH
+185500           MOVE 'P903'          TO ERR-KEY
+185600           PERFORM P9999-GOT-PROBLEM
+185700        END-IF
+185800        IF PARM-RES-TOT-DAYS > 0
+185900           SET DE-YYMMDD-FORMAT     TO TRUE
+186000           MOVE PARM-PRI-DATE-GREG TO DE-YYMMDD
+186100           PERFORM P8998-DATEEDIT
+186200           IF DE-INVALID-DATE
+186300              MOVE 'P1026-2'        TO ERR-PARAGRAPH
+186400              MOVE DE-YYMMDD        TO ERR-KEY
+186500              PERFORM P9999-GOT-PROBLEM
+186600           END-IF
+186700           MOVE DE-CCYYMMDD         TO DE-COMPARE1-DATE
+186800
+186900           SET DE-YYMMDD-FORMAT     TO TRUE
+187000           MOVE SCR15X-START-DATE TO DE-YYMMDD
+187100           PERFORM P8998-DATEEDIT
+187200           IF DE-INVALID-DATE
+187300              MOVE 'P1026-3'        TO ERR-PARAGRAPH
+187400              MOVE DE-YYMMDD        TO ERR-KEY
+187500              PERFORM P9999-GOT-PROBLEM
+187600           END-IF
+187700           MOVE DE-CCYYMMDD         TO DE-COMPARE2-DATE
+187800           IF DE-COMPARE1-DATE >= DE-COMPARE2-DATE
+187900              SET DONT-DISPLAY-STOP TO TRUE
+188000           END-IF
+188100        END-IF
+188200     END-IF
+188300*06/19/15 - BEG
+188400     MOVE SPACES                    TO WS-SCHED-START-ML-DATE-TIME
+188500                                       WS-SCHED-END-ML-DATE-TIME
+188600     IF  DISPLAY-TURN
+188700     AND WS-POOL-HOME-LEAD-TIME > 0
+188800        MOVE SCHED1-START-CE        TO WS-SCHED-START-ML-CE
+188810        MOVE SCHED-END-CE           TO WS-SCHED-END-ML-CE
+188811*
+188812        MOVE ZEROS                  TO DATE-CONVERSION-PARMS
+188813        SET PARM-SUBTRACT           TO TRUE
+188814        MOVE SCHED1-START-YYMMDD    TO PARM-PRI-DATE-GREG
+188815        MOVE SCHED1-START-TIME      TO PARM-PRI-HRMN
+188816        MOVE WS-POOL-HOME-LEAD-TIME TO PARM-SEC-HRMN
+188817        EXEC CICS LINK
+188818                  PROGRAM(P903-PGM)
+188819                  COMMAREA(DATE-CONVERSION-PARMS)
+188820                  LENGTH(P903-LGTH)
+188821                  RESP(WS-RESPONSE)
+188822        END-EXEC
+188823        MOVE WS-RESPONSE           TO FILE-STATUS
+188824        IF NOT SUCCESS
+188825           MOVE 'P1026-4'          TO ERR-PARAGRAPH
+188826           MOVE 'P903LINK'         TO ERR-KEY
+188827           PERFORM P9999-GOT-PROBLEM
+188828        END-IF
+188829        MOVE PARM-RES-DATE-GREG    TO WS-SCHED-START-ML-DATE
+188830        MOVE PARM-RES-HRMN         TO WS-SCHED-START-ML-TIME
+188840*
+188841        MOVE ZEROS                  TO DATE-CONVERSION-PARMS
+188842        SET PARM-SUBTRACT           TO TRUE
+188843        MOVE SCHED-END-YYMMDD       TO PARM-PRI-DATE-GREG
+188844        MOVE SCHED-END-TIME         TO PARM-PRI-HRMN
+188845        MOVE WS-POOL-HOME-LEAD-TIME TO PARM-SEC-HRMN
+188846        EXEC CICS LINK
+188847                  PROGRAM(P903-PGM)
+188848                  COMMAREA(DATE-CONVERSION-PARMS)
+188849                  LENGTH(P903-LGTH)
+188850                  RESP(WS-RESPONSE)
+188851        END-EXEC
+188852        MOVE WS-RESPONSE           TO FILE-STATUS
+188853        IF NOT SUCCESS
+188854           MOVE 'P1026-5'          TO ERR-PARAGRAPH
+188855           MOVE 'P903LINK'         TO ERR-KEY
+188856           PERFORM P9999-GOT-PROBLEM
+188857        END-IF
+188858        MOVE PARM-RES-DATE-GREG    TO WS-SCHED-END-ML-DATE
+188859        MOVE PARM-RES-HRMN         TO WS-SCHED-END-ML-TIME
+188860     ELSE
+188861        MOVE SCHED1-START-DATE-TIME TO WS-SCHED-START-ML-DATE-TIME
+188862        MOVE SCHED-END-DATE-TIME    TO WS-SCHED-END-ML-DATE-TIME
+188863     END-IF
+188864*06/19/15 - END
+188865*
+188866*    IF THE TURN'S START TIME PRECEDES THE FILTER TIME, MAKE SURE
+188867*    THE FILTER TIME FALLS WITHIN THE CALL WINDOW.
+188868*
+188869     IF DISPLAY-TURN
+188870        IF SCHED1-START-DATE-TIME <= HOLD-START-DATE-TIME
+188880           IF SCHED-END-DATE-TIME >= HOLD-START-DATE-TIME
+188890              CONTINUE
+188900           ELSE
+189000              SET DONT-DISPLAY-TURN TO TRUE
+189100           END-IF
+189200        END-IF
+189300     END-IF
+189400*CNC0564A - BEG
+189500*    WHEN WS-3A-BIDPK-TIEBRK-PW-BRD, TURNS NOT CURRENTLY SCHEDULED
+189600*    TO PROTECT DISPLAY IN RED, STATUS 'RP' FOR REST PERIOD.
+189700*
+189800     IF  DISPLAY-TURN
+189900     AND WS-3A-BIDPK-TIEBRK-PW-BRD
+190000        IF WS-SCHED-START-ML-DATE-TIME > HOLD-START-DATE-TIME
+190100           SET DISPLAY-TURN-RD-RED TO TRUE
+190110        END-IF
+190120        IF WS-SCHED-END-ML-DATE-TIME  < HOLD-START-DATE-TIME
+190130           SET DONT-DISPLAY-TURN   TO TRUE
+190140        END-IF
+190150     END-IF
+190160*CNC0564A- END
+190170*
+190180*    MAKE SURE THE TURN IS ON THE BOARD AT THE HOME TERMINAL
+190190*
+190200     IF DISPLAY-TURN
+190300*CNC0564A - BEG
+190400     OR DISPLAY-TURN-RD-RED
+190500*CNC0564A - END
+190600        MOVE SPACES             TO UFPTURN-AREA
+190700        MOVE SCHED1-DIST        TO DIST2
+190800        MOVE SCHED1-SUB-DIST    TO SUB-DIST2
+190900        MOVE SCHED1-BOARD-ID    TO POOL-NAME2
+191000        MOVE SCHED1-TURN-ID     TO TURN-NBR
+191100        MOVE SCHED1-CC          TO POOL-CRAFT-CODE2
+191200        MOVE UFPTURN-AREA       TO UFPTURN
+191300        PERFORM P8600-READ-UFPTURN
+191400        IF NOT SUCCESS
+191500           IF NO-RECORD-FND
+191600              SET DONT-DISPLAY-TURN TO TRUE
+191700           ELSE
+191800              MOVE 'P1026-6'    TO ERR-PARAGRAPH
+191900              MOVE UFPTURN      TO ERR-KEY
+192000              PERFORM P9999-GOT-PROBLEM
+192100           END-IF
+192200        ELSE
+192300           IF NOT (IN-TOWN AND UFP-ON-BOARD)
+192400              OR (DIST OF WS-UFP     NOT = DIST2
+192500              OR SUB-DIST OF WS-UFP  NOT = SUB-DIST2
+192600              OR POOL-NAME OF WS-UFP NOT = POOL-NAME2)
+192700              SET DONT-DISPLAY-TURN TO TRUE
+192800           END-IF
+192810*06/22/15 - BEG
+192811           IF DISPLAY-TURN
+192812              MOVE SPACES              TO TZ-PARAMETERS
+192813                                          WS-UFP-POS-DATE-TIME-TZ
+192814              SET TZ-IN-EASTERN-ZONE   TO TRUE
+192815              MOVE UFP-POS-DATE-TIME   TO TZ-IN-DATE-TIME
+192816              MOVE PSTCA-TIME-ZONE     TO TZ-OUT-ZONE
+192817              PERFORM P8996-TIMEZONE
+192818              MOVE TZ-OUT-DATE-TIME    TO WS-UFP-POS-DATE-TIME-TZ
+192819              IF WS-UFP-POS-DATE-TIME-TZ >
+192820                                       HOLD-START-DATE-TIME(3:10)
+192821                 SET DONT-DISPLAY-TURN TO TRUE
+192822              END-IF
+192823           END-IF
+192824*06/22/15 - END
+192825        END-IF
+192826     END-IF
+192827*
+192828*    MAKE SURE WE'RE NOT DEALING WITH A SCHEDULE FROM A CYCLE THAT
+192829*    WAS OVERLAID WITH A MORE RECENT CYCLE FOR THE SAME TIME
+192830*    PERIOD.
+192840*
+192850     IF DISPLAY-TURN
+192860*CNC0564A - BEG
+192870     OR DISPLAY-TURN-RD-RED
+192880*CNC0564A - END
+192890        SET FROM-CURRENT-CYCLE     TO TRUE
+192900        PERFORM P1027-CHECK-FOR-OVERLAY
+193000        IF NOT-FROM-CURRENT-CYCLE
+193100           SET DONT-DISPLAY-TURN   TO TRUE
+193200        END-IF
+193300     END-IF.
+193400*
+193500 P1027-CHECK-FOR-OVERLAY.
+193600*
+193700     PERFORM P8730-ENDBR-SCHEDKEY2
+193800     MOVE SCHED-KEY2               TO SAVE-SCHED-KEY2
+193900
+194000*
+194100*    GET MOST CURRENT STATS RECORD FOR FILTER DATE
+194200*
+194300     SET SCHED1-STATS              TO TRUE
+194400     MOVE SPACES                   TO SCHED1-EFF-DATE
+194500     MOVE SCHED-KEY1               TO SCHEDKEY1
+194600     IF SCR15X-START-DATE > SPACES
+194700        MOVE SCR15X-START-DATE       TO WS-EVAL-DATE
+194800        IF SCR15X-START-TIME > SPACES
+194900           MOVE SCR15X-START-TIME    TO WS-EVAL-TIME
+195000        ELSE
+195100           MOVE '0001'               TO WS-EVAL-TIME
+195200        END-IF
+195300     ELSE
+195400        MOVE WS-LOCAL-DATE           TO WS-EVAL-DATE
+195500        MOVE WS-LOCAL-TIME           TO WS-EVAL-TIME
+195600     END-IF
+195700     SET DE-YYMMDD-FORMAT            TO TRUE
+195800     MOVE WS-EVAL-DATE               TO DE-YYMMDD
+195900     PERFORM P8998-DATEEDIT
+196000     MOVE DE-CCYYMMDD                TO DE-COMPARE1-DATE
+196100     MOVE WS-EVAL-TIME               TO DE-COMPARE1-TIME
+196200
+196300     SET NOT-SCHED-DONE              TO TRUE
+196400     SET NOT-FOUND-CYCLE             TO TRUE
+196500     MOVE HIGH-VALUES                TO WS-END-CYCLE-DATE-TIME
+196600     PERFORM P8010-STARTBR-SCHED
+196700     IF NOT SUCCESS
+196800        SET SCHED-DONE                 TO TRUE
+196900     END-IF
+197000     PERFORM UNTIL SCHED-DONE
+197100        PERFORM P8020-READNEXT-SCHED
+197200        IF SUCCESS
+197300           IF SCHED1-DIST         = SCR15X-DIST
+197400              AND SCHED1-SUB-DIST = SCR15X-SUB-DIST
+197500              AND SCHED1-BOARD-ID = SCR15X-POOL
+197600              AND SCHED1-TURN-ID  = SAVE-SK2-TURN-ID
+197700              AND SCHED1-CC       = SAVE-SK2-CC
+197800              AND SCHED1-STATS
+197900              PERFORM P1028-EVALUATE-STATS-REC
+198000              IF FOUND-CYCLE
+198100                 SET SCHED-DONE        TO TRUE
+198200                 MOVE SCHED-CYCLE-START-DATE
+198300                                       TO WS-CYCLE-START-DATE-CENT
+198400                 MOVE SCHED-CYCLE-START-TIME
+198500                                       TO WS-CYCLE-START-TIME
+198600              END-IF
+198700           ELSE
+198800              SET SCHED-DONE           TO TRUE
+198900              IF WS-HOLD-SCHED > SPACES
+199000                 MOVE WS-HOLD-SCHED    TO WS-SCHED
+199100                 MOVE SPACES           TO WS-HOLD-SCHED
+199200                 MOVE SCHED-CYCLE-START-DATE
+199300                                       TO WS-CYCLE-START-DATE-CENT
+199400                 MOVE SCHED-CYCLE-START-TIME
+199500                                       TO WS-CYCLE-START-TIME
+199600                 SET FOUND-CYCLE       TO TRUE
+199700              END-IF
+199800           END-IF
+199900        ELSE
+200000           IF NO-RECORD-FND OR END-OF-FILE
+200100              SET SCHED-DONE         TO TRUE
+200200              IF WS-HOLD-SCHED > SPACES
+200300                 MOVE WS-HOLD-SCHED  TO WS-SCHED
+200400                 MOVE SPACES         TO WS-HOLD-SCHED
+200500                 MOVE SCHED-CYCLE-START-DATE
+200600                                       TO WS-CYCLE-START-DATE-CENT
+200700                 MOVE SCHED-CYCLE-START-TIME
+200800                                       TO WS-CYCLE-START-TIME
+200900                 SET FOUND-CYCLE     TO TRUE
+201000              END-IF
+201100           ELSE
+201200              MOVE 'P1027-1'         TO ERR-PARAGRAPH
+201300              MOVE SCHEDKEY1         TO ERR-KEY
+201400              PERFORM P9999-GOT-PROBLEM
+201500           END-IF
+201600        END-IF
+201700     END-PERFORM
+201800     PERFORM P8030-ENDBR-SCHED
+201900     IF NOT-FOUND-CYCLE
+202000        MOVE 'P1027-2'               TO ERR-PARAGRAPH
+202100        MOVE SCHEDKEY1               TO ERR-KEY
+202200        PERFORM P9999-GOT-PROBLEM
+202300     END-IF
+202400     MOVE SAVE-SCHED-KEY2            TO SCHEDKEY2
+202500     PERFORM P8710-STARTBR-SCHEDKEY2
+202600     PERFORM P8720-READNEXT-SCHEDKEY2
+202700*
+202800*    SEE IF SCHEDULE SEQUENCE # IS IN SYNCH WITH THE
+202900*    CYCLE START DATE.  IF IT ISN'T, WE'RE DEALING
+203000*    WITH A RECORD FROM THE PREVIOUS CYCLE WHICH
+203100*    HAPPENS TO OVERLAY THE CURRENT CYCLE. IGNORE THIS
+203200*    RECORD!
+203300*
+203400     MOVE ZEROES                          TO DATE-CONVERSION-PARMS
+203500     SET PARM-ADD                         TO TRUE
+203600     MOVE WS-CYCLE-START-DATE             TO PARM-PRI-DATE-GREG
+203700     SUBTRACT 1 FROM SCHED1-SEQ-NUM
+203800                          GIVING PARM-SEC-DATE-JULIAN
+203900     EXEC CICS LINK
+204000               PROGRAM(P903-PGM)
+204100               COMMAREA(DATE-CONVERSION-PARMS)
+204200               LENGTH(P903-LGTH)
+204300               RESP(WS-RESPONSE)
+204400     END-EXEC
+204500     MOVE WS-RESPONSE                     TO FILE-STATUS
+204600     IF NOT SUCCESS
+204700        MOVE 'P1027-4'                    TO ERR-PARAGRAPH
+204800        MOVE 'P903'                       TO ERR-KEY
+204900        PERFORM P9999-GOT-PROBLEM
+205000     END-IF
+205100     MOVE SCHED1-START-DATE-TIME          TO
+205200                                      WS-COMPARE-SCHED-START-DTTM
+205300     IF PARM-RES-DATE-GREG NOT = SCHED1-START-YYMMDD
+205400*CNC0510
+205500        IF SCHED1-SEQ-NUM = 001 AND
+205600           WS-PREV-SCHED-ASGN = SCHED1-ASSIGNMENT
+205700*          PREVIOUS ASSIGNMENT MATCH COMPARE DATE AND TIME
+205800           IF WS-COMPARE-SCHED-START-DTTM < WS-PREV-SCHED-END-DTTM
+205900              SET NOT-FROM-CURRENT-CYCLE  TO TRUE
+206000           END-IF
+206100        ELSE
+206200           IF SCHED1-SEQ-NUM NOT = 001
+206300              SET NOT-FROM-CURRENT-CYCLE  TO TRUE
+206400           ELSE
+206500*             COMPARE FOR OVERLAPPING TURN FROM ALL PREV ENTRIES.
+206600              IF S1 > 1
+206700*
+206800*                'S3' INDEXES THE PREVIOUS ARRAY ENTRY THAT WE'RE
+206900*                     COMPARING AGAINST.
+207000
+207100                 SET NOT-DONE1      TO TRUE
+207200                 MOVE S1            TO S3
+207300                 MOVE CRAFT-ARRAY-SUB TO S5
+207310                 PERFORM UNTIL S3 = 0 OR DONE1
+207311                    IF SCHED1-ASSIGNMENT = WS-COT-ASGN(S5, S3)
+207312                       MOVE WS-COT-END-DATE-TIME(S5, S3)
+207313                                    TO WS-COMPARE-SCHED-END-DTTM
+207314                       IF WS-COMPARE-SCHED-START-DTTM
+207315                                       < WS-COMPARE-SCHED-END-DTTM
+207316                          SET NOT-FROM-CURRENT-CYCLE TO TRUE
+207317                          SET DONE1 TO TRUE
+207318                       END-IF
+207319                    END-IF
+207320                    SUBTRACT 1    FROM S3
+207321                 END-PERFORM
+207322              END-IF
+207323           END-IF
+207324        END-IF
+207325*CNC0510-END
+207326     END-IF.
+207327*
+207328 P1028-EVALUATE-STATS-REC.
+207329*
+207330     MOVE SCHED-CYCLE-START-DATE       TO DE-COMPARE2-DATE
+207340     MOVE SCHED-CYCLE-START-TIME       TO DE-COMPARE2-TIME
+207350
+207360     IF DE-COMPARE1-DATE-TIME >= DE-COMPARE2-DATE-TIME
+207370        IF SCHEDULE-POOL
+207380           PERFORM P1029-GET-PROFILE-REC
+207390           MOVE SPACES                 TO DATE-CONVERSION-PARMS
+207400           MOVE DE-COMPARE2-YYMMDD     TO PARM-PRI-DATE-GREG
+207500           MOVE CNTL-75-SCH-CYCLE-DAYS TO PARM-SEC-DATE-JULIAN
+207600           SET PARM-ADD                TO TRUE
+207700           EXEC CICS LINK
+207800                     PROGRAM(P903-PGM)
+207900                     COMMAREA(DATE-CONVERSION-PARMS)
+208000                     LENGTH(P903-LGTH)
+208100                     RESP(WS-RESPONSE)
+208200           END-EXEC
+208300           MOVE WS-RESPONSE            TO FILE-STATUS
+208400           IF NOT SUCCESS
+208500              MOVE 'P1028-1'           TO ERR-PARAGRAPH
+208600              MOVE 'P903'              TO ERR-KEY
+208700              PERFORM P9999-GOT-PROBLEM
+208800           END-IF
+208900           MOVE PARM-RES-DATE-GREG     TO WS-SCHED-END-YYMMDD
+209000           MOVE PARM-RES-GREG-CENT     TO WS-SCHED-END-CE
+209100           MOVE CNTL-75-SCH-START-TIME TO WS-SCHED-END-TIME
+209200           IF DE-COMPARE1-DATE-TIME <= WS-SCHED-END-DATE-TIME
+209300              MOVE WS-SCHED        TO WS-HOLD-SCHED
+209400           ELSE
+209500              MOVE SPACES          TO WS-HOLD-SCHED
+209600           END-IF
+209700        ELSE
+209800           MOVE WS-SCHED           TO WS-HOLD-SCHED
+209900        END-IF
+210000     ELSE
+210100        IF WS-HOLD-SCHED > SPACES
+210200           SET FOUND-CYCLE              TO TRUE
+210300           MOVE SCHED-CYCLE-START-DATE  TO WS-END-CYCLE-DATE
+210400           MOVE SCHED-CYCLE-START-TIME  TO WS-END-CYCLE-TIME
+210500           MOVE WS-HOLD-SCHED           TO WS-SCHED
+210600           MOVE SPACES                  TO WS-HOLD-SCHED
+210700        ELSE
+210800           MOVE 'P1028-2'           TO ERR-PARAGRAPH
+210900           MOVE SCHEDKEY1           TO ERR-KEY
+211000           PERFORM P9999-GOT-PROBLEM
+211100        END-IF
+211200     END-IF.
+211300*
+211400 P1029-GET-PROFILE-REC.
+211500*
+211600     MOVE SPACES                 TO WS-CNTL-FILE
+211700     SET SCH-POOL-PROFILE-REC    TO TRUE
+211800     MOVE SCR15X-DIST            TO WS-PROF-DIST
+211900     MOVE SCR15X-SUB-DIST        TO WS-PROF-SUB-DIST
+212000     MOVE SCR15X-POOL            TO WS-PROF-BOARD
+212100     MOVE '0'                    TO WS-PROF-TERM
+212200     MOVE 'D'                    TO WS-PROF-TYPE
+212300     MOVE WS-PROFILE             TO CNTL-75-PROFILE
+212400     MOVE WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+212500                                 TO WS-CRAFT-CODE-CHECK
+212600     IF ENGINE-CRAFT
+212700        MOVE 'E'                 TO WS-CREW-UNIT
+212800     ELSE
+212900        MOVE 'T'                 TO WS-CREW-UNIT
+213000     END-IF
+213100     MOVE WS-CREW-UNIT           TO CNTL-75-CREW-UNIT
+213200     MOVE CNTLKEY-AREA           TO CNTLKEY
+213300     PERFORM P8000-READ-CNTLFILE
+213400     IF NOT SUCCESS
+213500        IF NOT NO-RECORD-FND
+213600           MOVE 'P1029-1'        TO ERR-PARAGRAPH
+213700           MOVE CNTLKEY          TO ERR-KEY
+213800           PERFORM P9999-GOT-PROBLEM
+213900        ELSE
+214000           MOVE '*'              TO CNTL-75-CREW-UNIT
+214100           MOVE CNTLKEY-AREA     TO CNTLKEY
+214200           PERFORM P8000-READ-CNTLFILE
+214300           IF NOT SUCCESS
+214400              MOVE 'P1029-2'     TO ERR-PARAGRAPH
+214500              MOVE CNTLKEY       TO ERR-KEY
+214600              PERFORM P9999-GOT-PROBLEM
+214700           END-IF
+214800        END-IF
+214900     END-IF.
+215000*
+215100 P1030-INQUIRE-BY-TURN.
+215200*
+215300*
+215400*    FIND THE 'LOWEST' KEY VALUE OF A TURN IN THE 'LAST' GROUP
+215500*    THAT WAS PREVIOUSLY DISPLAYED
+215600*
+215700     MOVE SPACES TO WS-COMPARE-TURN
+215800     PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+215900             UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+216000        IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB) > SPACE
+216100           AND NOT WS-CRAFT-DONE(CRAFT-ARRAY-SUB)
+216200           IF WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB) > SPACES
+216300              IF WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+216400                 < WS-COMPARE-TURN OR WS-COMPARE-TURN = SPACES
+216500                 MOVE WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+216600                    TO WS-COMPARE-TURN
+216700              END-IF
+216800           END-IF
+216900        END-IF
+217000     END-PERFORM
+217100     IF WS-COMPARE-TURN > SPACE
+217200        MOVE WS-COMPARE-TURN TO WS-UFP-TURN-KEY
+217300     ELSE
+217400        MOVE SPACES          TO WS-UFP-TURN-KEY
+217500        MOVE SCR15X-DIST     TO WS-UFP-DIST
+217600        MOVE SCR15X-SUB-DIST TO WS-UFP-SUB-DIST
+217700        MOVE SCR15X-POOL     TO WS-UFP-POOL
+217800     END-IF
+217900     PERFORM P1200-START-UFP-TURN
+218000     IF SUCCESS
+218100        IF WS-COMPARE-TURN > SPACE
+218200           PERFORM P1210-READ-NEXT-TURN
+218300        END-IF
+218400     END-IF
+218500     IF SUCCESS
+218600        MOVE ZERO TO DONE-CODE
+218700        PERFORM UNTIL DONE
+218800           MOVE '0' TO ASSOCIATED-TURN-FLAG
+218900           PERFORM P1210-READ-NEXT-TURN
+219000           IF SUCCESS
+219100              IF DIST2 = SCR15X-DIST AND
+219200                 SUB-DIST2 = SCR15X-SUB-DIST AND
+219300                 POOL-NAME2 = SCR15X-POOL
+219400                 PERFORM VARYING CRAFT-ARRAY-SUB FROM 1 BY 1
+219500                         UNTIL CRAFT-ARRAY-SUB > CRAFT-ARRAY-MAX
+219600                    IF WS-CRAFT-CODE(CRAFT-ARRAY-SUB)
+219700                       = POOL-CRAFT-CODE2
+219800                       IF UFPTURN-AREA
+219900                          > WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+220000                          MOVE SPACES TO
+220100                             WS-CRAFT-SCROLL-KEY(CRAFT-ARRAY-SUB)
+220200                          MOVE CRAFT-ARRAY-SUB TO CC-ARRAY-SUB
+220300                          IF WS-ASSOC-CRAFT(CRAFT-ARRAY-SUB)
+220400                             GREATER SPACE
+220500                             SET ASSOCIATED-TURN TO TRUE
+220600                          END-IF
+220700                          IF NOT ASSOCIATED-TURN
+220800                             PERFORM P1500-SETUP-NAME-LINE
+220900                             MOVE UFPTURN-AREA TO WS-UFP-TURN-KEY
+220910*CNC0499 - MFO - TESTING - BEG
+220920                             MOVE UFPTURN-AREA
+220921                                             TO WS-SV-UFPTURN-AREA
+220922*CNC0499 - MFO - TESTING - END
+220923                             EXEC CICS ENDBR
+220924                                       DATASET(UFP-VIA-TURN-NBR)
+220925                                       RESP(WS-RESPONSE)
+220926                             END-EXEC
+220927                             PERFORM P1400-CHECK-ASSOCIATED-TURNS
+220928                             PERFORM P1200-START-UFP-TURN
+220929                             IF NOT SUCCESS
+220930                                MOVE 'P1030-1' TO ERR-PARAGRAPH
+220940                                MOVE UFPTURN TO ERR-KEY
+220950                                PERFORM P9999-GOT-PROBLEM
+220960                             END-IF
+220970                             PERFORM P1210-READ-NEXT-TURN
+220980                             IF NOT SUCCESS
+220990                                MOVE 'P1030-2' TO ERR-PARAGRAPH
+221000                                MOVE UFPTURN TO ERR-KEY
+221100                                PERFORM P9999-GOT-PROBLEM
+221200                             END-IF
+221300                          END-IF
+221400                       END-IF
+221500                       MOVE CRAFT-ARRAY-MAX TO CRAFT-ARRAY-SUB
+221600                    END-IF
+221700                 END-PERFORM
+221800              ELSE
+221900                 SET DONE TO TRUE
+222000              END-IF
+222100           ELSE
+222200              SET DONE TO TRUE
+222300              IF NOT (NO-RECORD-FND OR END-OF-FILE)
+222400                 MOVE 'P1030-1' TO ERR-PARAGRAPH
+222500                 MOVE UFPTURN TO ERR-KEY
+222600                 PERFORM P9999-GOT-PROBLEM
+222700              END-IF
+222800           END-IF
+222900        END-PERFORM
+223000     ELSE
+223100        IF NOT (NO-RECORD-FND OR END-OF-FILE)
+223200           MOVE 'P1030-2' TO ERR-PARAGRAPH
+223300           MOVE WS-UFP-TURN-KEY TO ERR-KEY
+223400           PERFORM P9999-GOT-PROBLEM
+223500        END-IF
+223600     END-IF
+223700     EXEC CICS ENDBR
+223800               DATASET(UFP-VIA-TURN-NBR)
+223900               RESP(WS-RESPONSE)
+224000     END-EXEC.
+224100*
+224200 P1110-READ-NEXT-POS.
+224300*
+224400     EXEC CICS READ
+224500               GTEQ
+224600               DATASET(UFP-VIA-POSITION)
+224700               INTO(WS-UFP)
+224800               LENGTH(UFPPOS-RLGTH)
+224900               RIDFLD(UFPPOS)
+225000               KEYLENGTH(UFPPOS-KLGTH)
+225100               RESP(WS-RESPONSE)
+225200     END-EXEC
+225300     MOVE WS-RESPONSE TO FILE-STATUS.
+225400*
+225500 P1200-START-UFP-TURN.
+225600*
+225700     MOVE WS-UFP-TURN-KEY TO UFPTURN
+225800     EXEC CICS STARTBR
+225900               DATASET(UFP-VIA-TURN-NBR)
+226000               RIDFLD(UFPTURN)
+226100               GTEQ
+226200               RESP(WS-RESPONSE)
+226300     END-EXEC
+226400     MOVE WS-RESPONSE TO FILE-STATUS.
+226500*
+226600 P1210-READ-NEXT-TURN.
+226700*
+226800     EXEC CICS READNEXT
+226900               DATASET(UFP-VIA-TURN-NBR)
+227000               INTO(WS-UFP)
+227100               LENGTH(UFPTURN-RLGTH)
+227200               RIDFLD(UFPTURN)
+227300               KEYLENGTH(UFPTURN-KLGTH)
+227400               RESP(WS-RESPONSE)
+227500     END-EXEC
+227600     MOVE WS-RESPONSE TO FILE-STATUS.
+227700*
+227800 P1400-CHECK-ASSOCIATED-TURNS.
+227900*
+228000     MOVE WS-CRAFT-CODE(CC-ARRAY-SUB) TO WS-COMPARE-CRAFT
+228100     PERFORM VARYING CC-ARRAY-SUB FROM 1 BY 1
+228200        UNTIL CC-ARRAY-SUB > CRAFT-ARRAY-MAX
+228300        IF WS-ASSOC-CRAFT(CC-ARRAY-SUB) = WS-COMPARE-CRAFT
+228400           SET ASSOCIATED-TURN              TO TRUE
+228500           MOVE WS-CRAFT-CODE(CC-ARRAY-SUB) TO POOL-CRAFT-CODE2
+228600           MOVE UFPTURN-AREA TO UFPTURN
+228700*CNC0499 - MFO - TESTING - BEG
+228800                                MAKEUP-TURN
+228900*CNC0499 - MFO - TESTING - END
+229000*MFO #7 BEG
+229100           IF TURN-NBRA = 'MU'
+229200              PERFORM P1410-CHK-ASSOC-MU-TRN
+229300           ELSE
+229400*MFO #7 END
+229500              PERFORM P8600-READ-UFPTURN
+229600              IF NOT SUCCESS
+229700                 IF (NO-RECORD-FND OR END-OF-FILE)
+229800*CNC0499 - MFO - TESTING - BEG
+229900                    MOVE 'MU'               TO MAKEUP-TURN-PREFIX
+230000                    MOVE 01                 TO MAKEUP-TURN-NUMERIC
+230100                    MOVE '0'                TO WS-MU-DONE-CODE
+230200                                               WS-MU-TURN-FLAG
+230210                    PERFORM UNTIL MU-DONE
+230211                       MOVE MAKEUP-TURN TO UFPTURN
+230212*MFO 6/9/16 - BEG
+230213***                    PERFORM P8600-READ-UFPTURN
+230214                       PERFORM P8640-READNXT-UFPTURN
+230215*MFO 6/9/16 - END
+230216                       IF SUCCESS
+230217*MFO 6/9/16 - BEG
+230218*04/10/17 - BEG
+230219***                       IF  DIST      OF WS-UFP = SCR15X-DIST
+230220***                       AND SUB-DIST OF WS-UFP = SCR15X-SUB-DIST
+230221***                       AND POOL-NAME OF WS-UFP = SCR15X-POOL
+230222                          IF  DIST2      = MAKEUP-DIST
+230223                          AND SUB-DIST2  = MAKEUP-SUB-DIST
+230224                          AND POOL-NAME2 = MAKEUP-POOL
+230225*04/10/17 - END
+230226*6/21/16 - BEG
+230227                          AND TURN-NBRA = 'MU'
+230228*6/21/16 - END
+230229*MFO 6/9/16 - END
+230230                             IF UFP-TRNEE-MARRY-TURN-NBR > SPACES
+230231                             AND UFP-TRNEE-MARRY-TURN-NBR =
+230232                                 WS-SV-UFP-TURN
+230233                             AND POOL-CRAFT-CODE2 =
+230234                                 WS-CRAFT-CODE(CC-ARRAY-SUB)
+230235*7/26/16 - BEG
+230236                             AND NOT UFP-ASSOC-PRIMARY-COMPLETE
+230237*7/26/16 - END
+230238                                PERFORM P1500-SETUP-NAME-LINE
+230239                                SET MU-DONE TO TRUE
+230240                                SET MU-TURN-FOUND TO TRUE
+230241                             ELSE
+230242                                IF MAKEUP-TURN-NUMERIC < 99
+230243                                   ADD 1 TO MAKEUP-TURN-NUMERIC
+230244                                ELSE
+230245                                   MOVE 'P1400-1' TO ERR-PARAGRAPH
+230246                                   MOVE UFPTURN TO ERR-KEY
+230247                                   PERFORM P9999-GOT-PROBLEM
+230248                                END-IF
+230249                             END-IF
+230250*MFO 6/9/16 - BEG
+230251                          ELSE
+230252                             SET MU-DONE TO TRUE
+230253                          END-IF
+230254*MFO 6/9/16 - END
+230255                       ELSE
+230256                          SET MU-DONE TO TRUE
+230257                       END-IF
+230258                    END-PERFORM
+230259*
+230260                    IF NOT MU-TURN-FOUND
+230261                       IF OPTIONAL-CRAFT(CC-ARRAY-SUB)
+230262                          ADD CRAFT-SUB-INCREMENT
+230263                              TO WS-CRAFT-SUB(CC-ARRAY-SUB)
+230264                       ELSE
+230265                          MOVE 'P1400-2' TO ERR-PARAGRAPH
+230266                          MOVE UFPTURN TO ERR-KEY
+230267                          PERFORM P9999-GOT-PROBLEM
+230268                       END-IF
+230269                    END-IF
+230270                 ELSE
+230271                    MOVE 'P1400-3' TO ERR-PARAGRAPH
+230272                    MOVE UFPTURN TO ERR-KEY
+230273                    PERFORM P9999-GOT-PROBLEM
+230274                 END-IF
+230275*CNC0499 - MFO - TESTING - END
+230280              ELSE
+230290                 PERFORM P1500-SETUP-NAME-LINE
+230300              END-IF
+230310*MFO #7 BEG
+230320           END-IF
+230330*MFO #7 END
+230340*CNC0499-4-BEG
+230350           SET ASSOCIATED-TURN-NO           TO TRUE
+230360*CNC0499-4-END
+230370        END-IF
+230380     END-PERFORM
+230390     MOVE CRAFT-ARRAY-SUB TO CC-ARRAY-SUB.
+230400*
+230500 P1410-CHK-ASSOC-MU-TRN.
+230600*
+230700     MOVE SPACES                       TO WS-ORIG-TURN-NBR
+230800     IF UFP-ORIG-TURN-NBR > SPACES
+230900        MOVE UFP-ORIG-TURN-NBR         TO WS-ORIG-TURN-NBR
+231000***                                       TURN-NBR OF WS-UFP
+231100***     MOVE UFPTURN-AREA TO UFPTURN
+231200***     PERFORM P8600-READ-UFPTURN
+231300***     IF NOT SUCCESS
+231400***        IF (NO-RECORD-FND OR END-OF-FILE)
+231500***     IF SUCCESS
+231600              MOVE 'MU'                TO MAKEUP-TURN-PREFIX
+231700              MOVE 01                  TO MAKEUP-TURN-NUMERIC
+231800              MOVE '0'                 TO WS-MU-DONE-CODE
+231900                                          WS-MU-TURN-FLAG
+232000              PERFORM UNTIL MU-DONE
+232100                 MOVE MAKEUP-TURN TO UFPTURN
+232200*MFO 6/9/16 - BEG
+232300***              PERFORM P8600-READ-UFPTURN
+232310                 PERFORM P8640-READNXT-UFPTURN
+232320*MFO 6/9/16 - BEG
+232321                 IF SUCCESS
+232322*MFO 6/9/16 - BEG
+232323*04/10/17 - BEG
+232324***                 IF  DIST      OF WS-UFP = SCR15X-DIST
+232325***                 AND SUB-DIST  OF WS-UFP = SCR15X-SUB-DIST
+232326***                 AND POOL-NAME OF WS-UFP = SCR15X-POOL
+232327                    IF  DIST2      = MAKEUP-DIST
+232328                    AND SUB-DIST2  = MAKEUP-SUB-DIST
+232329                    AND POOL-NAME2 = MAKEUP-POOL
+232330*04/10/17 - END
+232331*6/21/16 - BEG
+232332                    AND TURN-NBRA = 'MU'
+232333*6/21/16 - END
+232334*MFO 6/9/16 - END
+232335                       IF UFP-ORIG-TURN-NBR > SPACES
+232336                       AND POOL-CRAFT-CODE2 =
+232337                            WS-CRAFT-CODE(CC-ARRAY-SUB)
+232338*9/22/16 - BEG
+232339*                      AND (UFP-ORIG-TURN-NBR = WS-ORIG-TURN-NBR
+232340*                       OR (UFP-ORIG-TURN-NBR(1:2) = 'MU'
+232341*                      AND UFP-TRNEE-MARRY-TURN-NBR =
+232342*                           WS-ORIG-TURN-NBR))
+232343                       AND (
+232344                           (UFP-ORIG-TURN-NBR(1:2) NOT = 'MU' AND
+232345                            UFP-ORIG-TURN-NBR = WS-ORIG-TURN-NBR)
+232346                          OR
+232347                           (UFP-ORIG-TURN-NBR(1:2) = 'MU' AND
+232348                            UFP-TRNEE-MARRY-TURN-NBR =
+232349                            WS-ORIG-TURN-NBR)
+232350                          )
+232351*9/22/16 - END
+232352*7/26/16 - BEG
+232353                       AND NOT UFP-ASSOC-PRIMARY-COMPLETE
+232354*7/26/16 - END
+232355                          PERFORM P1500-SETUP-NAME-LINE
+232356                          SET MU-DONE TO TRUE
+232357                          SET MU-TURN-FOUND TO TRUE
+232358                       ELSE
+232359                          IF MAKEUP-TURN-NUMERIC < 99
+232360                             ADD 1 TO MAKEUP-TURN-NUMERIC
+232361                          ELSE
+232362                             MOVE 'P1410-1' TO ERR-PARAGRAPH
+232363                             MOVE UFPTURN TO ERR-KEY
+232364                             PERFORM P9999-GOT-PROBLEM
+232365                          END-IF
+232366                       END-IF
+232367*MFO 6/9/16 - BEG
+232368                    ELSE
+232369                       SET MU-DONE TO TRUE
+232370                    END-IF
+232371*MFO 6/9/16 - END
+232372                 ELSE
+232373                    SET MU-DONE TO TRUE
+232374                 END-IF
+232375              END-PERFORM
+232376              IF NOT MU-TURN-FOUND
+232377                 IF OPTIONAL-CRAFT(CC-ARRAY-SUB)
+232378                    ADD CRAFT-SUB-INCREMENT
+232379                        TO WS-CRAFT-SUB(CC-ARRAY-SUB)
+232380                 ELSE
+232381                    MOVE 'P1410-2' TO ERR-PARAGRAPH
+232382                    MOVE UFPTURN TO ERR-KEY
+232383                    PERFORM P9999-GOT-PROBLEM
+232384                 END-IF
+232385              END-IF
+232386***        ELSE
+232387***           MOVE 'P1410-3' TO ERR-PARAGRAPH
+232388***           MOVE UFPTURN TO ERR-KEY
+232389***           PERFORM P9999-GOT-PROBLEM
+232390***        END-IF
+232391***     ELSE
+232392***        PERFORM P1500-SETUP-NAME-LINE
+232393***     END-IF
+232394*02/21/17 - BEG
+232395     ELSE
+232396        IF OPTIONAL-CRAFT(CC-ARRAY-SUB)
+232397           ADD CRAFT-SUB-INCREMENT TO WS-CRAFT-SUB(CC-ARRAY-SUB)
+232398        END-IF
+232399*02/21/17 - END
+232400     END-IF
+232401     .
+232402*
+232403 P1500-SETUP-NAME-LINE.
+232404*
+232405     MOVE SPACES TO WS-VARIABLE-LINE-1
+232406                    WS-VARIABLE-LINE-2
+232407                    WS-VARIABLE-LINE-3
+232408                    WS-VARIABLE-LINE-4
+232409                    WS-VARIABLE-LINE-5
+232410*CNC0564A - 04/29/15 - BEG
+232411                    WS-VARIABLE-LINE-6
+232420*CNC0564A - 04/29/15 - END
+232500                    LOC-DIST
+232600                    LOC-SUB-DIST
+232700                    LOC-POOL
+232800                    LOC-I-O
+232900     MOVE WS-CRAFT-SUB(CC-ARRAY-SUB) TO ARRAY-SUB
+233000     ADD CRAFT-SUB-INCREMENT TO WS-CRAFT-SUB(CC-ARRAY-SUB)
+233100     IF ARRAY-SUB NOT > WS-CRAFT-MAX(CC-ARRAY-SUB)
+233200        MOVE UFPTURN-AREA TO P15XCA-TURN-KEY(ARRAY-SUB)
+233300        IF CALL-ORDER-REQ
+233400           SET DE-YYMMDD-FORMAT         TO TRUE
+233500           SET DE-REFORMAT-ONLY         TO TRUE
+233600           MOVE UFP-POS-DATE-TIME(1:6)  TO DE-YYMMDD
+233700           PERFORM P8998-DATEEDIT
+233800           IF DE-INVALID-DATE
+233900              MOVE 'P1500-A'            TO ERR-PARAGRAPH
+234000              MOVE UFP-POS-DATE-TIME    TO ERR-KEY
+234100              MOVE SCHED-KEY1           TO ERR-SENTENCE
+234200              PERFORM P9999-GOT-PROBLEM
+234300           END-IF
+234400           MOVE SCHED-KEY2(9:13)
+234500                       TO P15XCA-CALL-ORDER-KEY(ARRAY-SUB)(1:13)
+234600           MOVE DE-YYMMDD-CE
+234700                       TO P15XCA-CALL-ORDER-KEY(ARRAY-SUB)(14:2)
+234800           MOVE UFP-POSITION-TIME
+234900                       TO P15XCA-CALL-ORDER-KEY(ARRAY-SUB)(16:14)
+235000        END-IF
+235100        PERFORM PXXXX-GET-UFP-EMPS
+235200        MOVE SPACES TO WS-MSTR
+235300        IF HAVE-PERMANENT-EMPLOYEE
+235400           MOVE FIRST-EMP-NBR TO MSTRNBRK
+235500           PERFORM P8500-READ-MASTER
+235600           MOVE EMP-NAME OF WS-MSTR TO SCR15X-NAME(ARRAY-SUB)
+235700           IF POSITION-BOARD
+235800              PERFORM P8900-Y2KDATE
+235900***           MOVE EMP-HOME-ONLY-FLAG   TO WS-VL3-HOME
+236000              IF (HOLD-POOL-REST-CODE = '2' OR '3')
+236100*             AND EMP-MTOD-NUM          > WS-LOCAL-DATE-TIME
+236200              AND DE-COMPARE1-DATE-TIME > WS-LOCAL-DATE-TIME-CENT
+236300                 MOVE DE-COMPARE1-TIME     TO WS-VL3-MTOD
+236400              END-IF
+236500              IF (HOLD-POOL-REST-CODE = '1' OR '3')
+236600*             AND EMP-US-RSTD-NUM       > WS-LOCAL-DATE-TIME
+236700              AND DE-COMPARE2-DATE-TIME > WS-LOCAL-DATE-TIME-CENT
+236800                 MOVE EMP-US-RSTD-TIME     TO WS-VL3-USHR
+236900              END-IF
+237000*             IF EMP-PERS-REST-NUM     > WS-LOCAL-DATE-TIME
+237100              IF DE-COMPARE3-DATE-TIME > WS-LOCAL-DATE-TIME-CENT
+237200                 MOVE EMP-PERS-REST-TIME   TO WS-VL3-PERS-REST
+237300                 MOVE EMP-PERS-REST-DATE(5:2)
+237400                                           TO WS-VL3-PERS-REST-DY
+237500              END-IF
+237600           END-IF
+237700           IF TEMPORARY-ASGNMT > SPACE
+237800              MOVE 'TV' TO SCR15X-LO(ARRAY-SUB)
+237900           ELSE
+238000              IF NOT AVAILABLE
+238100                 MOVE LAYOFF-CODE TO SCR15X-LO(ARRAY-SUB)
+238200*07/14/14 CNC0556
+238300                 IF LAYOFF-EM-CODE > SPACES
+238400                    PERFORM P1505-CHK-STATUS-REASON
+238500                    IF P956-SHOW-RSN-ON-SCR-YES
+238600                       IF (INQUIRY-REQ AND
+238700                           POSITION-BOARD) OR
+238800                           CALL-ORDER-REQ
+238900                          MOVE LAYOFF-EM-CODE  TO WS-VL3-RSN
+239000                       ELSE
+239100                          MOVE SPACES          TO WS-VL3-RSN
+239200                       END-IF
+239300                    ELSE
+239400                       MOVE SPACES             TO WS-VL3-RSN
+239500                    END-IF
+239600                 END-IF
+239700              ELSE
+239800                 IF ON-DUTY-ASGNMT > SPACE
+239900                    AND ON-DUTY-ASGNMT NOT = UFPTURN-AREA
+239910                    MOVE 'OT' TO SCR15X-LO(ARRAY-SUB)
+239920                 END-IF
+239930              END-IF
+239931           END-IF
+308100*CNC0600-B
+308300           IF  WS-CAN-WRR-NEW
+308400                  AND EMP-NBR OF WS-MSTR > ZEROES
+308500              PERFORM P6100-SET-EMP-STATUS-FLAGS
+308600           END-IF
+308700*CNC0600-E
+239932        ELSE
+239933           IF UFP-BLANK-TURN
+239934              IF PSTCA-SUB = 2
+239935                 MOVE 'DISCONTINUATION' TO SCR15X-NAME(ARRAY-SUB)
+239936              ELSE
+239937                 MOVE 'DISCONTINUED'    TO SCR15X-NAME(ARRAY-SUB)
+239938              END-IF
+239939           ELSE
+239940              IF PSTCA-SUB = 2
+239950                 MOVE '<< TOUR VACANT >>'
+239960                                 TO SCR15X-NAME(ARRAY-SUB)
+239970              ELSE
+239980                 MOVE '<< OPEN TURN >>'
+239990                                 TO SCR15X-NAME(ARRAY-SUB)
+240000              END-IF
+240100           END-IF
+240200        END-IF
+240300        MOVE SPACES TO WS-MSTR
+240400        IF HAVE-TEMPORARY-EMPLOYEE
+240500           AND FIRST-EMP-NBR NOT = TEMP-EMP-ONE
+240600           MOVE SPACES TO SCR15X-LO(ARRAY-SUB)
+240700           MOVE TEMP-EMP-ONE TO MSTRNBRK
+240800           PERFORM P8500-READ-MASTER
+240900           IF POSITION-BOARD
+241000              MOVE SPACES               TO WS-VARIABLE-LINE-3
+241100***           MOVE EMP-HOME-ONLY-FLAG   TO WS-VL3-HOME
+241200              PERFORM P8900-Y2KDATE
+241300              IF (HOLD-POOL-REST-CODE = '2' OR '3')
+241400*             AND EMP-MTOD-NUM          > WS-LOCAL-DATE-TIME
+241500              AND DE-COMPARE1-DATE-TIME > WS-LOCAL-DATE-TIME-CENT
+241600                 MOVE DE-COMPARE1-TIME     TO WS-VL3-MTOD
+241700              END-IF
+241800              IF (HOLD-POOL-REST-CODE = '1' OR '3')
+241900*             AND EMP-US-RSTD-NUM       > WS-LOCAL-DATE-TIME
+242000              AND DE-COMPARE2-DATE-TIME > WS-LOCAL-DATE-TIME-CENT
+242100                 MOVE EMP-US-RSTD-TIME     TO WS-VL3-USHR
+242200              END-IF
+242300*             IF EMP-PERS-REST-NUM     > WS-LOCAL-DATE-TIME
+242400              IF DE-COMPARE3-DATE-TIME > WS-LOCAL-DATE-TIME-CENT
+242500                 MOVE EMP-PERS-REST-TIME   TO WS-VL3-PERS-REST
+242600                 MOVE EMP-PERS-REST-DATE(5:2)
+242700                                           TO WS-VL3-PERS-REST-DY
+242800              END-IF
+242900           ELSE
+243000              MOVE SCR15X-NAME(ARRAY-SUB)
+243100                                 TO WS-VL1-VARIABLE
+243200           END-IF
+243300           MOVE EMP-NAME OF WS-MSTR TO SCR15X-NAME(ARRAY-SUB)
+243400           IF TEMPORARY-ASGNMT > SPACE
+243500              AND TEMPORARY-ASGNMT NOT = UFPTURN-AREA
+243600              MOVE 'TV' TO SCR15X-LO(ARRAY-SUB)
+243700           ELSE
+243800              IF NOT AVAILABLE
+243900                 MOVE LAYOFF-CODE TO SCR15X-LO(ARRAY-SUB)
+244000*07/14/14 CNC0556
+244100                 IF LAYOFF-EM-CODE > SPACES
+244200                    PERFORM P1505-CHK-STATUS-REASON
+244300                    IF P956-SHOW-RSN-ON-SCR-YES
+244400                       IF (INQUIRY-REQ AND
+244500                           POSITION-BOARD) OR
+244600                           CALL-ORDER-REQ
+244700                          MOVE LAYOFF-EM-CODE  TO WS-VL3-RSN
+244800                       ELSE
+244900                          MOVE SPACES          TO WS-VL3-RSN
+245000                       END-IF
+245100                    ELSE
+245200                       MOVE SPACES             TO WS-VL3-RSN
+245300                    END-IF
+245400                 END-IF
+245500              ELSE
+245600                 IF ON-DUTY-ASGNMT > SPACE
+245700                    AND ON-DUTY-ASGNMT NOT = UFPTURN-AREA
+245800                    MOVE 'OT' TO SCR15X-LO(ARRAY-SUB)
+245900                 END-IF
+246000              END-IF
+246010           END-IF
+327400*CNC0600-B
+327500           IF  WS-CAN-WRR-NEW
+327600                  AND EMP-NBR OF WS-MSTR > ZEROES
+327700              PERFORM P6100-SET-EMP-STATUS-FLAGS
+327800           END-IF
+327900*CNC0600-E
+246020        END-IF
+246030        IF IN-TOWN
+246040           AND DIST OF WS-UFP = DIST2
+246041           AND SUB-DIST OF WS-UFP = SUB-DIST2
+246042           AND POOL-NAME OF WS-UFP = POOL-NAME2
+246043           AND NOT HAVE-ON-DUTY-EMPLOYEE
+246044           CONTINUE
+246045        ELSE
+246046           MOVE SPACES TO WS-MSTR
+246047           IF HAVE-ON-DUTY-EMPLOYEE
+246048              MOVE ON-DUTY-EMP TO MSTRNBRK
+246049              PERFORM P8500-READ-MASTER
+246050              IF POSITION-BOARD
+246060                 MOVE SPACES               TO WS-VARIABLE-LINE-3
+246070***              MOVE EMP-HOME-ONLY-FLAG   TO WS-VL3-HOME
+246080
+246090                 PERFORM P8900-Y2KDATE
+246100                 IF (HOLD-POOL-REST-CODE = '2' OR '3')
+246200*                AND EMP-MTOD-NUM > WS-LOCAL-DATE-TIME
+246300                 AND DE-COMPARE1-DATE-TIME
+246400                                  > WS-LOCAL-DATE-TIME-CENT
+246500                    MOVE DE-COMPARE1-TIME     TO WS-VL3-MTOD
+246600                 END-IF
+246700                 IF (HOLD-POOL-REST-CODE = '1' OR '3')
+246800*                AND EMP-US-RSTD-NUM > WS-LOCAL-DATE-TIME
+246900                 AND DE-COMPARE2-DATE-TIME
+247000                                     > WS-LOCAL-DATE-TIME-CENT
+247100                    MOVE EMP-US-RSTD-TIME     TO WS-VL3-USHR
+247200                 END-IF
+247300*                IF EMP-PERS-REST-NUM > WS-LOCAL-DATE-TIME
+247400                 IF DE-COMPARE3-DATE-TIME
+247500                                      > WS-LOCAL-DATE-TIME-CENT
+247600                    MOVE EMP-PERS-REST-TIME TO WS-VL3-PERS-REST
+247700                    MOVE EMP-PERS-REST-DATE(5:2)
+247800                                            TO WS-VL3-PERS-REST-DY
+247900                 END-IF
+248000              ELSE
+248100                 IF EMP-NAME OF WS-MSTR NOT =
+248200                                   SCR15X-NAME(ARRAY-SUB)
+248300                    MOVE SCR15X-NAME(ARRAY-SUB) TO WS-VL1-VARIABLE
+248400                 END-IF
+248500              END-IF
+248600              MOVE SPACES TO SCR15X-LO(ARRAY-SUB)
+248700              MOVE EMP-NAME OF WS-MSTR
+248800                            TO SCR15X-NAME(ARRAY-SUB)
+327400*CNC0600-B
+327500              IF WS-CAN-WRR-NEW
+327600                     AND EMP-NBR OF WS-MSTR > ZEROES
+327700                 PERFORM P6100-SET-EMP-STATUS-FLAGS
+327800              END-IF
+327900*CNC0600-E
+248900              IF NOT AVAILABLE
+249000                 MOVE LAYOFF-CODE TO SCR15X-LO(ARRAY-SUB)
+249100*07/14/14 CNC0556
+249200                 IF LAYOFF-EM-CODE > SPACES
+249300                    PERFORM P1505-CHK-STATUS-REASON
+249400                    IF P956-SHOW-RSN-ON-SCR-YES
+249500                       IF (INQUIRY-REQ AND
+249600                           POSITION-BOARD) OR
+249700                           CALL-ORDER-REQ
+249800                          MOVE LAYOFF-EM-CODE  TO WS-VL3-RSN
+249900                       ELSE
+250000                          MOVE SPACES          TO WS-VL3-RSN
+250100                       END-IF
+250200                    ELSE
+250300                       MOVE SPACES             TO WS-VL3-RSN
+250400                    END-IF
+250500                 END-IF
+250600              END-IF
+250700           ELSE
+250800              MOVE SCR15X-NAME(ARRAY-SUB) TO WS-VL1-VARIABLE
+250900              MOVE SPACES TO SCR15X-LO(ARRAY-SUB)
+251000              IF UFP-BLANK-TURN
+251100                IF PSTCA-SUB = 2
+251200                  MOVE 'DISCONTINUATION-VACANCE'
+251300                                  TO SCR15X-NAME(ARRAY-SUB)
+251400                ELSE
+251410                  MOVE 'DISCONTINUED-VACANT'
+251420                                  TO SCR15X-NAME(ARRAY-SUB)
+251430                END-IF
+      *CNC0600-B
+                      MOVE SPACES       TO WS-EMP-STATUS-FLAG
+      *CNC0600-E
+251440              ELSE
+251450                IF PSTCA-SUB = 2
+251460                  MOVE ' TOUR VACANT' TO SCR15X-NAME(ARRAY-SUB)
+251470                ELSE
+251480                  MOVE ' VACANT TURN' TO SCR15X-NAME(ARRAY-SUB)
+251490                END-IF
+      *CNC0600-B
+                      MOVE SPACES       TO WS-EMP-STATUS-FLAG
+      *CNC0600-E
+251500              END-IF
+251600           END-IF
+251700        END-IF
+251800        IF (REPOSITION-REQ OR UFP-MOVE-REQ)
+251900        AND NOT ASSOCIATED-TURN
+252000*
+252100*          CONVERT SYSTEM DATE/TIME TO LOCAL DATE/TIME
+252200*
+252300           MOVE SPACES              TO TZ-PARAMETERS
+252400           SET TZ-IN-EASTERN-ZONE   TO TRUE
+252500           MOVE UFP-POS-DATE-TIME   TO TZ-IN-DATE-TIME
+252600           MOVE PSTCA-TIME-ZONE     TO TZ-OUT-ZONE
+252700           PERFORM P8996-TIMEZONE
+252800           IF REPOSITION-REQ
+252900              MOVE TZ-OUT-DATE-TIME    TO WS-VL2-DATE-TIME
+253000              MOVE '-'                 TO WS-VL2-DASH
+253100              MOVE UFP-POS-TIE-BREAKER TO WS-VL2-TIE-CODE
+253200           ELSE
+253300              MOVE DIST      OF WS-UFP TO WS-VL4-DIST
+253400              MOVE SUB-DIST  OF WS-UFP TO WS-VL4-SDIST
+253500              MOVE POOL-NAME OF WS-UFP TO WS-VL4-POOL
+253600              MOVE IN-OUT-TERMINAL     TO WS-VL4-TERM
+253700              MOVE TZ-OUT-DATE-TIME    TO WS-VL4-DATE-TIME
+253800              MOVE '-'                 TO WS-VL4-DASH1
+253900                                          WS-VL4-DASH2
+254000                                          WS-VL4-DASH3
+254100                                          WS-VL4-DASH4
+254200           END-IF
+254300        END-IF
+347200*CNC0600-B
+347300        IF WS-CAN-WRR-NEW AND WS-EMP-STATUS-RED
+347400           MOVE RED     TO SCR15X-NAME-COLOR(ARRAY-SUB)
+347500        ELSE
+347600           IF WS-CAN-WRR-NEW AND WS-EMP-STATUS-YELLOW
+347700              MOVE YELLOW  TO  SCR15X-NAME-COLOR(ARRAY-SUB)
+347800           END-IF
+347900        END-IF
+              MOVE SPACES        TO WS-EMP-STATUS-FLAG
+348000*CNC0600-E
+254400        IF CALL-ORDER-REQ
+254500*CNC0564A - 04/29/15 - BEG
+254600           IF WS-3A-BIDPK-TIEBRK-PW-BRD
+254700              MOVE WS-VL3-RSN  TO WS-VL6-RSN
+254800              IF TURN-IS-NOT-SCHEDULED
+254900                 IF SCR15X-LO(ARRAY-SUB) NOT > SPACES
+255000                    MOVE 'RP'  TO SCR15X-LO(ARRAY-SUB)
+255001                 END-IF
+255002                 MOVE RED      TO SCR15X-CC-COLOR(ARRAY-SUB)
+255003                                  SCR15X-TURN-COLOR(ARRAY-SUB)
+255004                                  SCR15X-I-O-COLOR(ARRAY-SUB)
+255005                                  SCR15X-POS-COLOR(ARRAY-SUB)
+255006                                  SCR15X-NAME-COLOR(ARRAY-SUB)
+255007                                  SCR15X-LO-COLOR(ARRAY-SUB)
+255008                                  SCR15X-VARIABLE-COLOR(ARRAY-SUB)
+255009              END-IF
+255010*C1106 - BEG
+255020              MOVE WS-VL3-MTOD         TO WS-VL6-MTOD
+255021*C1106 - END
+255022              MOVE WS-VL3-USHR         TO WS-VL6-USHR
+255023              MOVE WS-VL3-PERS-REST    TO WS-VL6-PERS
+255024              MOVE WS-VL3-PERS-REST-DY TO WS-VL6-PERS-DY
+255025              MOVE SCHED1-START-DD     TO WS-VL6-DAY
+255026              MOVE SCHED1-START-TIME   TO WS-VL6-START
+255027              MOVE SCHED-END-TIME      TO WS-VL6-END
+255028           ELSE
+255029              MOVE WS-VL3-RSN          TO WS-VL5-RSN
+255030              MOVE WS-VL3-MTOD         TO WS-VL5-MTOD
+255031              MOVE WS-VL3-USHR         TO WS-VL5-USHR
+255032              MOVE WS-VL3-PERS-REST    TO WS-VL5-PERS
+255033              MOVE WS-VL3-PERS-REST-DY TO WS-VL5-PERS-DY
+255034              MOVE SCHED1-START-TIME   TO WS-VL5-START
+255035              MOVE SCHED-END-TIME      TO WS-VL5-END
+255036              MOVE SCHED1-CALL-ORDER   TO WS-VL5-CO
+255037           END-IF
+255038*CNC0564A - 04/29/15 - END
+255039        END-IF
+255040        MOVE TURN-NBR OF WS-UFP TO SCR15X-TURN(ARRAY-SUB)
+255050        IF ASSOCIATED-TURN
+255060           MOVE SPACES TO SCR15X-POS(ARRAY-SUB)
+255070        ELSE
+255080           IF TURN-BOARD
+255090              EXEC CICS ENDBR
+255100                        DATASET(UFP-VIA-TURN-NBR)
+255200                        RESP(WS-RESPONSE)
+255300              END-EXEC
+255400              MOVE WS-RESPONSE  TO FILE-STATUS
+255500              IF NOT SUCCESS
+255600                 MOVE 'P1500-1' TO ERR-PARAGRAPH
+255700                 PERFORM P9999-GOT-PROBLEM
+255800              END-IF
+255900              MOVE UFPTURN-AREA TO P910-TURN-PARM
+256000              EXEC CICS LINK
+256100                        PROGRAM(P910-PGM)
+256200                        COMMAREA(P910-UFP-POS-PARMS)
+256300                        LENGTH(P910-LGTH)
+256400                        RESP(WS-RESPONSE)
+256500              END-EXEC
+256600              MOVE WS-RESPONSE TO FILE-STATUS
+256700              IF NOT SUCCESS
+256800                 MOVE 'P1500-2' TO ERR-PARAGRAPH
+256900                 PERFORM P9999-GOT-PROBLEM
+257000              END-IF
+257100              MOVE UFPTURN      TO WS-UFP-TURN-KEY
+257200              PERFORM P1200-START-UFP-TURN
+257300              IF NOT SUCCESS
+257400                 MOVE 'P1500-3' TO ERR-PARAGRAPH
+257500                 MOVE UFPTURN   TO ERR-KEY
+257600                 PERFORM P9999-GOT-PROBLEM
+257700              END-IF
+257800              PERFORM P1210-READ-NEXT-TURN
+257900              IF NOT SUCCESS
+258000                 MOVE 'P1500-4' TO ERR-PARAGRAPH
+258100                 MOVE UFPTURN   TO ERR-KEY
+258200                 PERFORM P9999-GOT-PROBLEM
+258300              END-IF
+258400              MOVE P910-POS-PARM-NUM TO SCR15X-POS(ARRAY-SUB)
+258500           ELSE
+258600              ADD 1 TO P15XCA-HOLD-POS-NUM(CC-ARRAY-SUB)
+258700              MOVE P15XCA-HOLD-POS(CC-ARRAY-SUB)
+258800                 TO SCR15X-POS(ARRAY-SUB)
+258900           END-IF
+259000        END-IF
+259100        IF TURN-BOARD
+259200           IF NOT HAVE-PERMANENT-EMPLOYEE
+259300              AND NOT HAVE-TEMPORARY-EMPLOYEE
+259400              CONTINUE
+259500           ELSE
+259600              IF NOT-REP-TURN
+259700                 MOVE 'N' TO WS-VL1-INFO-1
+259800              END-IF
+259900              IF SHORT-TURN-LAST
+260000                 MOVE 'S' TO WS-VL1-INFO-2
+260100              END-IF
+260200           END-IF
+260300           IF UFP-BLANK-TURN
+260400              MOVE 'B' TO WS-VL1-INFO-3
+260500           ELSE
+260600              IF CO-POOL AND CONDUCTOR-GETS-2-BRAKEMEN
+260700                 MOVE '2' TO WS-VL1-INFO-3
+260800              END-IF
+260900           END-IF
+261000        END-IF
+261100        SET DE-YYMMDD-FORMAT        TO TRUE
+261200        MOVE UFP-POS-DATE-TIME(1:6) TO DE-YYMMDD
+261300        PERFORM P8998-DATEEDIT
+261400        MOVE DE-CCYYMMDD            TO DE-COMPARE1-DATE
+261500        MOVE UFP-POS-DATE-TIME(7:4) TO DE-COMPARE1-TIME
+261600        IF NOT ASSOCIATED-TURN
+261700           IF (ENGINE-POOL-CRAFT AND EN-ID-POOL)
+261800              OR (TRAIN-POOL-CRAFT AND TR-ID-POOL)
+261900              IF UFP-ID-INACTIVE-BOARD
+262000*                OR UFP-POS-DATE-TIME     > PRESENT-TIME
+262100                 OR DE-COMPARE1-DATE-TIME > WS-PRESENT-TIME-CENT
+262200                 MOVE 'I'             TO SCR15X-I-O(ARRAY-SUB)
+262300              ELSE
+262400                 MOVE IN-OUT-TERMINAL TO SCR15X-I-O(ARRAY-SUB)
+262500              END-IF
+262600           ELSE
+262700              MOVE IN-OUT-TERMINAL    TO SCR15X-I-O(ARRAY-SUB)
+262800           END-IF
+262900        END-IF
+263000        IF TURN-BOARD
+263100           IF TRAIN-SYMBOL NOT = SPACES
+263200              IF WS-VL1-VARIABLE > SPACES
+263300                 MOVE WS-VL1-VARIABLE TO NM-FLD
+263400                 MOVE TRAIN-SYMBOL    TO TR-FLD
+263500                 MOVE WORK-FIELD      TO WS-VL1-VARIABLE
+263600              ELSE
+263700                 MOVE TRAIN-SYMBOL    TO TRAIN-FLD
+263800                 MOVE TRAIN-FIELD     TO WS-VL1-VARIABLE
+263900              END-IF
+264000           END-IF
+264100        END-IF
+264200        IF TURN-BOARD
+264300           IF DIST OF WS-UFP NOT = DIST2 OR
+264400              SUB-DIST OF WS-UFP NOT = SUB-DIST2 OR
+264500              POOL-NAME OF WS-UFP NOT = POOL-NAME2
+264600               MOVE DIST OF WS-UFP      TO LOC-DIST
+264700               MOVE SUB-DIST OF WS-UFP  TO LOC-SUB-DIST
+264800               MOVE POOL-NAME           TO LOC-POOL
+264900               MOVE IN-OUT-TERMINAL     TO LOC-I-O
+265000           END-IF
+265100        ELSE
+265200           IF SCR15X-DIST NOT = DIST2 OR
+265300              SCR15X-SUB-DIST NOT = SUB-DIST2 OR
+265400              SCR15X-POOL NOT = POOL-NAME2
+265500               MOVE DIST2 OF WS-UFP     TO LOC-DIST
+265600               MOVE SUB-DIST2 OF WS-UFP TO LOC-SUB-DIST
+265700               MOVE POOL-NAME2          TO LOC-POOL
+265800               MOVE IN-OUT-TERMINAL     TO LOC-I-O
+265900           END-IF
+266000        END-IF
+266100        IF REPOSITION-REQ
+266200        OR UFP-MOVE-REQ
+266300           IF ASSOCIATED-TURN
+266400             MOVE SPACES             TO SCR15X-VARIABLE(ARRAY-SUB)
+266500           ELSE
+266600             IF REPOSITION-REQ
+266700                MOVE WS-VARIABLE-LINE-2
+266800                                     TO SCR15X-VARIABLE(ARRAY-SUB)
+266900             ELSE
+267000                MOVE WS-VARIABLE-LINE-4
+267100                                     TO SCR15X-VARIABLE(ARRAY-SUB)
+267200             END-IF
+267300           END-IF
+267400        ELSE
+267500           IF POSITION-BOARD
+267600              IF UFP-SHORT-TURN-COUNT > ZEROES
+267700                 MOVE UFP-SHORT-TURN-COUNT TO WS-VL3-SHORT-TURN
+267800              END-IF
+267900***           IF WS-VL3-HOME NOT = 'Y'
+268000***              MOVE SPACES TO WS-VL3-HOME
+268100***           END-IF
+268200              IF LOC-DIST > SPACES
+268300                 MOVE LOCATION-AREA       TO WS-VL3-TURN-INFO
+268400              END-IF
+268500              IF CALL-ORDER-REQ
+268600*CNC0564A - 04/29/15 - BEG
+268700                 IF WS-3A-BIDPK-TIEBRK-PW-BRD
+268800                    MOVE WS-VARIABLE-LINE-6 TO
+268900                                 SCR15X-VARIABLE(ARRAY-SUB)
+269000                 ELSE
+269100                    MOVE WS-VARIABLE-LINE-5 TO
+269200                                 SCR15X-VARIABLE(ARRAY-SUB)
+269300                 END-IF
+269400*CNC0564A - 04/29/15 - END
+269500              ELSE
+269600                 MOVE WS-VARIABLE-LINE-3 TO
+269700                                 SCR15X-VARIABLE(ARRAY-SUB)
+269800              END-IF
+269900           ELSE
+270000              IF LOC-DIST > SPACES
+270100                 MOVE LOCATION-AREA    TO WS-VL1-VARIABLE-B
+270200              END-IF
+270300              MOVE WS-VARIABLE-LINE-1  TO
+270400                                 SCR15X-VARIABLE(ARRAY-SUB)
+270500           END-IF
+270600        END-IF
+270700     END-IF
+270800*
+270900*    HAVE WE FILLED UP THE PAGE YET
+271000*
+271100     SET DONE TO TRUE
+271200     PERFORM VARYING J FROM 1 BY 1
+271300             UNTIL J > CRAFT-ARRAY-MAX
+271400        IF WS-CRAFT-SUB(J) NOT > WS-CRAFT-MAX(J)
+271500           MOVE '0' TO DONE-CODE
+271600        END-IF
+271700     END-PERFORM.
+271800*
+271900 P1505-CHK-STATUS-REASON.
+272000*
+272100*    READ THE CNTL FOR STATUS/REASON
+272200     MOVE SPACES                        TO P956-COMMAREA-PARMS
+272300     SET P956-GET-CNTL-STATUS-REASON    TO TRUE
+272400
+272500     MOVE LAYOFF-CODE-1  OF WS-MSTR     TO P956-STATUS-CODE
+272600     MOVE LAYOFF-EM-CODE OF WS-MSTR     TO P956-REASON-CODE
+272700     MOVE DIST     OF WS-MSTR           TO P956-DIST
+272800     MOVE SUB-DIST OF WS-MSTR           TO P956-SDIST
+272900     MOVE CRAFT    OF WS-MSTR           TO P956-CC
+273000
+273100     IF TEMPORARY-ASGNMT                 > SPACE
+273200        MOVE TEMPORARY-ASGNMT-FLAG
+273300                                        TO P956-ASGN-TYPE
+273400        MOVE TA-1                       TO P956-ASGN
+273500        MOVE TA-DIST                    TO P956-DIST
+273600        MOVE TA-SUB-DIST                TO P956-SDIST
+273700        IF TEMP-ASGN-XB
+273800           MOVE TA-CC                   TO P956-XB
+273900        END-IF
+274000     ELSE
+274001        IF NORMAL-ASGNMT                 > SPACES
+274002           MOVE NORMAL-ASGNMT-FLAG
+274003                                        TO P956-ASGN-TYPE
+274004           MOVE NA-1                    TO P956-ASGN
+274005           MOVE NA-DIST                 TO P956-DIST
+274006           MOVE NA-SUB-DIST             TO P956-SDIST
+274007           IF NORM-ASGN-XB
+274008              MOVE NA-CC                TO P956-XB
+274009           END-IF
+274010        END-IF
+274011     END-IF
+274012
+274013     EXEC CICS LINK
+274014               PROGRAM (P956-PGM)
+274015               COMMAREA(P956-COMMAREA-PARMS)
+274016               LENGTH  (P956-LGTH)
+274017               RESP    (WS-RESPONSE)
+274018     END-EXEC
+274019
+274020     MOVE WS-RESPONSE                   TO FILE-STATUS
+274021     IF NOT SUCCESS
+274022        MOVE 'P1505-1'                  TO ERR-PARAGRAPH
+274023        MOVE P956-INPUT-PARMS           TO ERR-KEY
+274024        PERFORM P9999-GOT-PROBLEM
+274025     END-IF
+274026     .
+274027*
+274028 P1750-SET-SEL-MARKERS.
+274029*
+274030*    THIS ROUTINE WILL ENSURE THAT AN ADD OR CUT FUNCTION IS
+274031*    BEING DONE ON THE "PRIMARY TURN" (WHEN MARRIED) IF THE
+274032*    USER IS ATTEMPTING TO ADD ONE OF THE "ASSOCIATED TURNS"
+274033*
+274034     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+274035        UNTIL ARRAY-SUB > ARRAY-MAX
+274036        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+274037           PERFORM VARYING K FROM 1 BY 1
+274038              UNTIL K > CRAFT-ARRAY-MAX
+274039              IF WS-CRAFT-CODE(K) = SCR15X-CC(ARRAY-SUB)
+274040                 IF WS-ASSOC-CRAFT(K) > SPACE
+274041                    AND NOT OPTIONAL-CRAFT(K)
+274042                    MOVE '0' TO DONE-CODE
+274043                    MOVE ARRAY-SUB     TO J
+274044                    PERFORM UNTIL DONE
+274045                       SUBTRACT 1 FROM J
+274046                       IF J < 2
+274047                          OR SCR15X-CC(J) = WS-ASSOC-CRAFT(K)
+274048                          SET DONE TO TRUE
+274049                          MOVE SCR15X-SEL(ARRAY-SUB)
+274050                             TO SCR15X-SEL(J)
+274060                          IF SCR15X-TURN(ARRAY-SUB) > SPACE
+274070                             MOVE SCR15X-TURN(ARRAY-SUB)
+274080                                TO SCR15X-TURN(J)
+274090                          END-IF
+274100                          MOVE SPACE TO SCR15X-SEL(ARRAY-SUB)
+274200                       END-IF
+274300                    END-PERFORM
+274400                 END-IF
+274500                 MOVE CRAFT-ARRAY-MAX TO K
+274600              END-IF
+274700           END-PERFORM
+274800        END-IF
+274900     END-PERFORM.
+275000*
+275100 P2000-ADD.
+275200*
+275300     PERFORM P1750-SET-SEL-MARKERS
+275400     MOVE SPACES TO WS-UFP-TURN-KEY
+275500     MOVE SCR15X-DIST TO WS-UFP-DIST
+275600     MOVE SCR15X-SUB-DIST TO WS-UFP-SUB-DIST
+275700     MOVE SCR15X-POOL TO WS-UFP-POOL
+275800     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+275900        UNTIL ARRAY-SUB > ARRAY-MAX
+276000              OR ERRORS-FOUND
+276100        MOVE SPACES TO SCR15X-VARIABLE(ARRAY-SUB)
+276200        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+276300           IF SCR15X-SEL(ARRAY-SUB) = ('X' OR 'A')
+276400              PERFORM P2100-CHECK-FOR-TURN
+276500              IF NOT ERRORS-FOUND
+276600                 MOVE ' '      TO SCR15X-SEL(ARRAY-SUB)
+276700              END-IF
+276800           ELSE
+276900              SET ERRORS-FOUND TO TRUE
+277000              MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+277100              MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+277200*                  INVALID-CODE-MSG
+277300              MOVE 'I041' TO MSGLOG-CODE
+277400           END-IF
+277500        END-IF
+277600     END-PERFORM
+277700     IF NOT ERRORS-FOUND
+277800        SET ENTER-KEY TO TRUE
+277900        PERFORM P1000-INQUIRY
+278000*            'POOL SUCCESSFULLY UPDATED'
+278100        MOVE 'P003' TO MSGLOG-CODE
+278200     ELSE
+278300*            'POOL UPDATED WITH ABOVE EXCEPTIONS'
+278400        MOVE 'P026' TO MSGLOG-CODE
+278500     END-IF.
+278600*
+278700 P2100-CHECK-FOR-TURN.
+278800*
+278900     IF SCR15X-TURN(ARRAY-SUB) > SPACES
+279000        MOVE SCR15X-TURN(ARRAY-SUB) TO CHECK-VALID-TURN
+279100        IF VALID-TURN-PREFIX > SPACES AND
+279200           VALID-TURN-SUFFIX NUMERIC
+279300           MOVE SCR15X-TURN(ARRAY-SUB) TO WS-UFP-TURN
+279400           MOVE SCR15X-CC(ARRAY-SUB) TO WS-UFP-CC
+279500           MOVE WS-UFP-TURN-KEY TO UFPTURN
+279600           PERFORM P8600-READ-UFPTURN
+279700           IF NOT SUCCESS
+279800              IF (NO-RECORD-FND OR END-OF-FILE)
+279900*
+280000*                IF ADDING AN 'OPTIONAL' TURN, AND THE TURN
+280100*                IS MARRIED TO ANOTHER TURN, SEE IF THE
+280200*                PARENT TURN EXISTS.
+280300*
+280400                 PERFORM VARYING K FROM 1 BY 1
+280500                    UNTIL SCR15X-CC(ARRAY-SUB) = WS-CRAFT-CODE(K)
+280600                          OR K > CRAFT-ARRAY-MAX
+280700                 END-PERFORM
+280800                 IF K NOT > CRAFT-ARRAY-MAX
+280900                    IF OPTIONAL-CRAFT(K)
+281000                       AND WS-ASSOC-CRAFT(K) > SPACE
+281100                       MOVE WS-ASSOC-CRAFT(K)
+281200                          TO UFP-CRAFT-CODE OF UFPTURN
+281300                       PERFORM P8600-READ-UFPTURN
+281400                       IF NOT SUCCESS
+281500                          IF (NO-RECORD-FND OR END-OF-FILE)
+281600                             SET ERRORS-FOUND TO TRUE
+281700                             MOVE -1
+281800                                TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+281900                             MOVE REV-VIDEO
+282000                                TO SCR15X-TURN-HI(ARRAY-SUB)
+282100                             IF PSTCA-SUB = 2
+282200                               STRING WS-ASSOC-CRAFT(K)
+282300                                     ' TOUR DOIT ETRE AJOUTE EN
+282400-                                    'PREMIER'
+282500                                     DELIMITED BY SIZE
+282600                                   INTO SCR15X-VARIABLE(ARRAY-SUB)
+282700                             ELSE
+282800                               STRING WS-ASSOC-CRAFT(K)
+282900                                     ' TURN MUST BE ADDED FIRST'
+283000                                     DELIMITED BY SIZE
+283100                                   INTO SCR15X-VARIABLE(ARRAY-SUB)
+283200                             END-IF
+283300                          ELSE
+283400                             MOVE 'P2100-1' TO ERR-PARAGRAPH
+283500                             MOVE UFPTURN   TO ERR-KEY
+283600                             PERFORM P9999-GOT-PROBLEM
+283700                          END-IF
+283800                       ELSE
+283900                          IF DIST IN WS-UFP = DIST2
+284000                             AND SUB-DIST IN WS-UFP = SUB-DIST2
+284100                             AND POOL-NAME IN WS-UFP = POOL-NAME2
+284200                             AND IN-TOWN
+284300                             AND UFP-ON-BOARD
+284400                             AND TRAIN-SYMBOL NOT > SPACES
+284500                             CONTINUE
+284600                          ELSE
+284700                             SET ERRORS-FOUND   TO TRUE
+284800                             MOVE -1
+284900                                 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+285000                             MOVE REV-VIDEO
+285100                                TO SCR15X-TURN-HI(ARRAY-SUB)
+285200                             IF PSTCA-SUB = 2
+285300                               MOVE 'TOUR PRIM SE FAIRE AU
+285400-                                   'TERM AFFEC'
+285500                                  TO SCR15X-VARIABLE(ARRAY-SUB)
+285600                             ELSE
+285700                               MOVE 'PRIMARY TURN MUST BE "HOME"'
+285800                                  TO SCR15X-VARIABLE(ARRAY-SUB)
+285900                             END-IF
+286000                          END-IF
+286100                       END-IF
+286200                    END-IF
+286300                 ELSE
+286400                    MOVE 'P2100-2'          TO ERR-PARAGRAPH
+286500                    MOVE UFPTURN            TO ERR-KEY
+286600                    PERFORM P9999-GOT-PROBLEM
+286700                 END-IF
+286800                 IF NOT ERRORS-FOUND
+286900                    MOVE SPACES TO P916-COMMAREA-PARMS
+287000                    SET P916-ADD-FUNCTION TO TRUE
+287100                    MOVE WS-UFP-TURN-KEY TO P916-TURN-PARM
+287200                    EXEC CICS LINK
+287300                              PROGRAM(P916-PGM)
+287400                              COMMAREA(P916-COMMAREA-PARMS)
+287500                              LENGTH(P916-LGTH)
+287600                              RESP(WS-RESPONSE)
+287700                    END-EXEC
+287800                    MOVE WS-RESPONSE TO FILE-STATUS
+287900                    IF NOT SUCCESS
+288000                       MOVE 'P2100-3' TO ERR-PARAGRAPH
+288100                       PERFORM P9999-GOT-PROBLEM
+288200                    END-IF
+288300                 END-IF
+288400              ELSE
+288500                 MOVE 'P2100-4' TO ERR-PARAGRAPH
+288600                 MOVE UFPTURN   TO ERR-KEY
+288700                 PERFORM P9999-GOT-PROBLEM
+288800              END-IF
+288900           ELSE
+289000              SET ERRORS-FOUND TO TRUE
+289100              MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+289200              MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+289300              IF PSTCA-SUB = 2
+289400                 MOVE 'TOUR DEJA INSCRIT'
+289500                        TO SCR15X-VARIABLE(ARRAY-SUB)
+289600              ELSE
+289700                 MOVE 'TURN ALREADY EXISTS'
+289800                        TO SCR15X-VARIABLE(ARRAY-SUB)
+289900              END-IF
+290000           END-IF
+290100        ELSE
+290200           SET ERRORS-FOUND TO TRUE
+290300           MOVE -1        TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+290400           MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+290500           IF PSTCA-SUB = 2
+290600              MOVE 'PRESENTATION DU TOUR INVALIDE'
+290700                     TO SCR15X-VARIABLE(ARRAY-SUB)
+290800           ELSE
+290900              MOVE 'INVALID TURN FORMAT'
+291000                     TO SCR15X-VARIABLE(ARRAY-SUB)
+291100           END-IF
+291200        END-IF
+291300     ELSE
+291400        SET ERRORS-FOUND TO TRUE
+291500        MOVE -1        TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+291600        MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+291700        IF PSTCA-SUB = 2
+291800           MOVE 'NUMERO DE TOUR NECESSAIRE'
+291900                  TO SCR15X-VARIABLE(ARRAY-SUB)
+292000        ELSE
+292100           MOVE 'TURN NUMBER IS REQUIRED'
+292200                  TO SCR15X-VARIABLE(ARRAY-SUB)
+292300        END-IF
+292400     END-IF.
+292500*
+292600 P3000-REPOSITION.
+292700*
+292800     MOVE SPACES TO P943-COMMAREA-PARMS
+292900     SET P943-REPOSITION-FUN TO TRUE
+293000     PERFORM P8800-GET-CURRENT-TIME
+293100     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+293200             UNTIL ARRAY-SUB > ARRAY-MAX
+293300        IF SCR15X-SEL(ARRAY-SUB) = ('X' OR 'R')
+293400           IF P15XCA-TURN-KEY(ARRAY-SUB) NOT > SPACES
+293500              SET ERRORS-FOUND TO TRUE
+293600              MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+293700*                  'NO RECORD AVAILABLE FOR REPOSITION'
+293800              MOVE 'N010' TO MSGLOG-CODE
+293900              MOVE ARRAY-MAX   TO ARRAY-SUB
+294000           ELSE
+294100              PERFORM P3100-EDIT-EFFECTIVE-TIME
+294200              IF NOT ERRORS-FOUND
+294300                 PERFORM P3200-PROCESS-REPOSITION
+294400              END-IF
+294500              MOVE ARRAY-MAX TO ARRAY-SUB
+294600           END-IF
+294700        END-IF
+294800     END-PERFORM
+294900     IF NOT ERRORS-FOUND
+295000        SET ENTER-KEY TO TRUE
+295100        PERFORM P1000-INQUIRY
+295200*            'POOL SUCCESSFULLY UPDATED'
+295300        MOVE 'P003' TO MSGLOG-CODE
+295400     END-IF.
+295500*
+295600 P3100-EDIT-EFFECTIVE-TIME.
+295700*
+295800     MOVE SCR15X-VARIABLE(ARRAY-SUB) TO WS-VARIABLE-LINE-2
+295900     SET DE-YYMMDD-FORMAT          TO TRUE
+296000     MOVE WS-VL2-DATE              TO DE-YYMMDD
+296100     PERFORM P8998-DATEEDIT
+296200     IF DE-INVALID-DATE OR
+296300        WS-VL2-TIME NOT NUMERIC OR
+296400        WS-VL2-HR > '23' OR
+296500        WS-VL2-MN > '59'
+296600         SET ERRORS-FOUND TO TRUE
+296700         MOVE -1        TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+296800         MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+296900*             INVALID-DATE-TIME-MSG
+297000         MOVE 'I042' TO MSGLOG-CODE
+297100     ELSE
+297200*
+297300*       COVERT VL2 IN LOCAL TIME TO VL2 IN SYSTEM TIME
+297400*
+297500        MOVE SPACES                 TO TZ-PARAMETERS
+297600        MOVE PSTCA-TIME-ZONE        TO TZ-IN-ZONE
+297700        MOVE WS-VL2-DATE-TIME       TO TZ-IN-DATE-TIME
+297800        SET TZ-OUT-EASTERN-ZONE     TO TRUE
+297900        PERFORM P8996-TIMEZONE
+298000*       MOVE TZ-OUT-DATE-TIME       TO WS-VL2-SYS-DATE-TIME
+298100        MOVE TZ-OUT-DATE-TIME-CENT  TO WS-VL2-SYS-DATE-TIME-CENT
+298200        MOVE TZ-OUT-ZONE            TO P943-EMP-TIME-ZONE
+298300
+298400*       IF WS-VL2-SYS-DATE-TIME      > PRESENT-TIME
+298500        IF WS-VL2-SYS-DATE-TIME-CENT > WS-PRESENT-TIME-CENT
+298600           SET ERRORS-FOUND TO TRUE
+298700           MOVE -1        TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+298800           MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+298900*               'CANNOT REPOSITION TO FUTURE DATE'
+299000           MOVE 'C013' TO MSGLOG-CODE
+299100        ELSE
+299200           IF WS-VL2-TIE-CODE NOT NUMERIC
+299300              OR WS-VL2-TIE-CODE > '9000'
+299400              SET ERRORS-FOUND TO TRUE
+299500              MOVE -1        TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+299600              MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+299700*                  'INVALID TIE CODE'
+299800              MOVE 'I031' TO MSGLOG-CODE
+299900           END-IF
+300000        END-IF
+300100     END-IF.
+300200*
+300300 P3200-PROCESS-REPOSITION.
+300400*
+300500     MOVE SCR15X-DIST            TO DIST OF UFPPOS-AREA
+300600     MOVE SCR15X-SUB-DIST        TO SUB-DIST OF UFPPOS-AREA
+300700     MOVE SCR15X-POOL            TO POOL-NAME OF UFPPOS-AREA
+300800     MOVE SCR15X-CC(ARRAY-SUB)   TO POOL-CRAFT-CODE OF UFPPOS-AREA
+300900     MOVE ZEROES                 TO WS-UFP-POS-IN-OUT
+301000     MOVE SCR15X-BOARD           TO WS-UFP-POS-IN-OUT-TERM
+301100     MOVE WS-UFP-POS-IN-OUT      TO IN-OUT-TOWN-FLAG
+301200     SET UFP-ON-BOARD            TO TRUE
+301300     MOVE WS-VL2-SYS-DATE-TIME   TO UFP-POS-DATE-TIME
+301400     MOVE WS-VL2-TIE-CODE        TO UFP-POS-TIE-BREAKER
+301500     MOVE UFPPOS-AREA            TO UFPPOS
+301600     EXEC CICS READ
+301700               DATASET(UFP-VIA-POSITION)
+301800               INTO(WS-UFP)
+301900               LENGTH(UFPPOS-RLGTH)
+302000               RIDFLD(UFPPOS)
+302100               KEYLENGTH(UFPPOS-KLGTH)
+302200               RESP(WS-RESPONSE)
+302300     END-EXEC
+302400     MOVE WS-RESPONSE TO FILE-STATUS
+302500     IF SUCCESS
+302600        SET ERRORS-FOUND TO TRUE
+302700        MOVE -1 TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+302800        MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+302900*            'RECORD ALREADY EXISTS WITH THIS EFFECTIVE DATE/TIME'
+303000        MOVE 'R008' TO MSGLOG-CODE
+303100     ELSE
+303200        IF NO-RECORD-FND
+303300           SET UFP-ID-INACTIVE-BOARD   TO TRUE
+303400           MOVE UFPPOS-AREA            TO UFPPOS
+303500           EXEC CICS READ
+303600                     DATASET(UFP-VIA-POSITION)
+303700                     INTO(WS-UFP)
+303800                     LENGTH(UFPPOS-RLGTH)
+303900                     RIDFLD(UFPPOS)
+304000                     KEYLENGTH(UFPPOS-KLGTH)
+304100                     RESP(WS-RESPONSE)
+304200           END-EXEC
+304300           MOVE WS-RESPONSE TO FILE-STATUS
+304400           IF SUCCESS
+304500              SET ERRORS-FOUND TO TRUE
+304600              MOVE -1 TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+304700              MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+304800*            'RECORD ALREADY EXISTS WITH THIS EFFECTIVE DATE/TIME'
+304900              MOVE 'R008' TO MSGLOG-CODE
+305000           ELSE
+305100              MOVE P15XCA-TURN-KEY(ARRAY-SUB) TO UFPTURN
+305200              EXEC CICS READ
+305300                        UPDATE
+305400                        DATASET(UFP-VIA-TURN-NBR)
+305500                        INTO(WS-UFP)
+305600                        LENGTH(UFPTURN-RLGTH)
+305700                        RIDFLD(UFPTURN)
+305800                        KEYLENGTH(UFPTURN-KLGTH)
+305900                        RESP(WS-RESPONSE)
+306000              END-EXEC
+306100              MOVE WS-RESPONSE TO FILE-STATUS
+306200              IF NOT SUCCESS
+306300                 MOVE 'P3200-1' TO ERR-PARAGRAPH
+306400                 MOVE UFPTURN   TO ERR-KEY
+306500                 PERFORM P9999-GOT-PROBLEM
+306600              END-IF
+306700
+306800              MOVE UFP-POSITION-TIME   TO P943-FUN05-POS
+306900              MOVE UFP-POS-DATE-TIME   TO P943-FUN05-OLD-DATE-TIME
+307000
+307100              MOVE WS-VL2-SYS-DATE-TIME TO UFP-POS-DATE-TIME
+307200              MOVE WS-VL2-TIE-CODE      TO UFP-POS-TIE-BREAKER
+307300              PERFORM P8630-REWRITE-UFPTURN
+307400              PERFORM PXXXX-GET-UFP-EMPS
+307500              IF HAVE-ON-DUTY-EMPLOYEE
+307600                 OR HAVE-TEMPORARY-EMPLOYEE
+307700                 OR HAVE-PERMANENT-EMPLOYEE
+307800                 IF HAVE-ON-DUTY-EMPLOYEE
+307900                    MOVE ON-DUTY-EMP TO MSTRNBRK
+308000                 ELSE
+308100                    IF HAVE-TEMPORARY-EMPLOYEE
+308200                       MOVE TEMP-EMP-ONE TO MSTRNBRK
+308300                    ELSE
+308400                       MOVE FIRST-EMP-NBR TO MSTRNBRK
+308500                    END-IF
+308600                 END-IF
+308700                 PERFORM P8500-READ-MASTER
+308800                 MOVE CRAFT OF WS-MSTR       TO P943-CRAFT
+308900                 MOVE EMP-NBR OF WS-MSTR     TO P943-EMP-NBR
+309000                 MOVE LAYOFF-CODE OF WS-MSTR TO P943-LO
+309100              ELSE
+309200                 MOVE '999999998'            TO P943-EMP-NBR
+309300              END-IF
+309400              MOVE DIST OF WS-UFP       TO P943-DIST
+309500              MOVE SUB-DIST OF WS-UFP   TO P943-SDIST
+309600              MOVE POOL-NAME OF WS-UFP  TO P943-POOL-ASG
+309700              MOVE IN-OUT-TERMINAL      TO P943-IN-OUT
+309800              MOVE UFPTURN-AREA         TO P943-NORM-ASGN
+309900              MOVE WS-VL2-DATE-TIME     TO P943-EFF-DATE-TIME
+310000              PERFORM P8900-WRITE-HISTORY
+310100           END-IF
+310200        ELSE
+310300           MOVE 'P3200-3' TO ERR-PARAGRAPH
+310400           MOVE UFPPOS    TO ERR-KEY
+310500           PERFORM P9999-GOT-PROBLEM
+310600        END-IF
+310700     END-IF.
+310800*
+310900 P4000-CUT.
+311000*
+311100     PERFORM P1750-SET-SEL-MARKERS
+311200     MOVE SPACES TO WS-UFP-TURN-KEY
+311300     MOVE SCR15X-DIST TO WS-UFP-DIST
+311400     MOVE SCR15X-SUB-DIST TO WS-UFP-SUB-DIST
+311500     MOVE SCR15X-POOL TO WS-UFP-POOL
+311600     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+311700             UNTIL ARRAY-SUB > ARRAY-MAX
+311800                   OR ERRORS-FOUND
+311900        MOVE SPACES TO SCR15X-VARIABLE(ARRAY-SUB)
+312000        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+312100           IF SCR15X-SEL(ARRAY-SUB) = ('X' OR 'C')
+312200              IF SCR15X-TURN(ARRAY-SUB) > SPACES
+312300                 MOVE SCR15X-TURN(ARRAY-SUB) TO WS-UFP-TURN
+312400                 MOVE SCR15X-CC(ARRAY-SUB) TO WS-UFP-CC
+312500                 MOVE 0 TO ASSOCIATED-TURN-FLAG
+312600                 MOVE WS-UFP-TURN-KEY TO UFPTURN
+312700                 PERFORM P8600-READ-UFPTURN
+312800                 IF SUCCESS
+312900                    IF TEMPORARY-TURN
+313000                       PERFORM P4010-VERIFY-XTRA-TURN
+313100                    END-IF
+313200                    IF NOT ERRORS-FOUND
+313300                       MOVE SPACES TO P915-COMMAREA-PARMS
+313400                       SET P915-CUT-FUNCTION TO TRUE
+313500                       MOVE UFPTURN-AREA TO P915-TURN-PARM
+313600                       EXEC CICS LINK
+313700                                 PROGRAM(P915-PGM)
+313800                                 COMMAREA(P915-COMMAREA-PARMS)
+313900                                 LENGTH(P915-LGTH)
+314000                                 RESP(WS-RESPONSE)
+314100                       END-EXEC
+314200                       MOVE WS-RESPONSE TO FILE-STATUS
+314300                       IF NOT SUCCESS
+314400                          MOVE 'P4000-1' TO ERR-PARAGRAPH
+314500                          PERFORM P9999-GOT-PROBLEM
+314600                       END-IF
+314700                    END-IF
+314800                 ELSE
+314900                    IF NO-RECORD-FND OR END-OF-FILE
+315000                       SET ERRORS-FOUND TO TRUE
+315100                       MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+315200                       MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+315300                       IF PSTCA-SUB = 2
+315400                          MOVE 'AUCUNE INDICATION TOUR AU DOSS'
+315500                                 TO SCR15X-VARIABLE(ARRAY-SUB)
+315600                       ELSE
+315700                          MOVE 'NO RECORD OF TURN'
+315800                                 TO SCR15X-VARIABLE(ARRAY-SUB)
+315900                       END-IF
+316000                    ELSE
+316100                       MOVE 'P4000-2' TO ERR-PARAGRAPH
+316200                       MOVE UFPTURN   TO ERR-KEY
+316300                       PERFORM P9999-GOT-PROBLEM
+316400                    END-IF
+316500                 END-IF
+316600              ELSE
+316700                 SET ERRORS-FOUND TO TRUE
+316800                 MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+316900                 MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+317000                 IF PSTCA-SUB = 2
+317100                    MOVE 'NUMERO DE TOUR NECESSAIRE'
+317200                           TO SCR15X-VARIABLE(ARRAY-SUB)
+317300                 ELSE
+317400                    MOVE 'TURN NUMBER IS REQUIRED'
+317500                           TO SCR15X-VARIABLE(ARRAY-SUB)
+317600                 END-IF
+317700              END-IF
+317800           ELSE
+317900              SET ERRORS-FOUND TO TRUE
+318000              MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+318100              MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+318200              IF PSTCA-SUB = 1
+318300                 MOVE 'INVALID ENTRY CODE'
+318400                      TO SCR15X-VARIABLE(ARRAY-SUB)
+318500              ELSE
+318600                 MOVE 'CODE D''ENTREE NON VALIDE'
+318700                      TO SCR15X-VARIABLE(ARRAY-SUB)
+318800              END-IF
+318900           END-IF
+319000           IF NOT ERRORS-FOUND
+319100              MOVE ' '                   TO SCR15X-SEL(ARRAY-SUB)
+319200           END-IF
+319300        END-IF
+319400     END-PERFORM
+319500     IF NOT ERRORS-FOUND
+319600        SET ENTER-KEY TO TRUE
+319700        PERFORM P1000-INQUIRY
+319800*            'POOL SUCCESSFULLY UPDATED'
+319900        MOVE 'P003' TO MSGLOG-CODE
+320000     ELSE
+320100*            'POOL UPDATED WITH ABOVE EXCEPTIONS'
+320200        MOVE 'P026' TO MSGLOG-CODE
+320300     END-IF.
+320400*
+320500 P4010-VERIFY-XTRA-TURN.
+320600*
+320700     PERFORM PXXXX-GET-UFP-EMPS
+320800     MOVE WS-UFP TO HOLD-UFP
+320900     IF NOT HAVE-ON-DUTY-EMPLOYEE
+321000        AND NOT HAVE-TEMPORARY-EMPLOYEE
+321100        AND NOT HAVE-PERMANENT-EMPLOYEE
+321200        MOVE WS-UFP-CC TO WS-COMPARE-CRAFT
+321300        PERFORM VARYING J FROM 1 BY 1
+321400           UNTIL J > CRAFT-ARRAY-MAX
+321500           OR ERRORS-FOUND
+321600           IF WS-ASSOC-CRAFT(J) = WS-COMPARE-CRAFT
+321700              MOVE WS-CRAFT-CODE(J) TO POOL-CRAFT-CODE2
+321800              PERFORM PXXXX-GET-UFP-EMPS
+321900              IF HAVE-ON-DUTY-EMPLOYEE
+322000                 OR HAVE-TEMPORARY-EMPLOYEE
+322100                 OR HAVE-PERMANENT-EMPLOYEE
+322200                 SET ERRORS-FOUND TO TRUE
+322300              END-IF
+322400           END-IF
+322500        END-PERFORM
+322600        IF NOT ERRORS-FOUND
+322700           IF TRAIN-SYMBOL > SPACE
+322800              SET ERRORS-FOUND    TO TRUE
+322900           END-IF
+323000        END-IF
+323100     ELSE
+323200        SET ERRORS-FOUND TO TRUE
+323300     END-IF
+323400     IF ERRORS-FOUND
+323500        MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+323600        MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+323700        IF HAVE-ON-DUTY-EMPLOYEE
+323800           OR HAVE-TEMPORARY-EMPLOYEE
+323900           OR HAVE-PERMANENT-EMPLOYEE
+324000           IF PSTCA-SUB = 2
+324100              MOVE 'INVALIDE - EMPLOYES ASSIGNES'
+324200                     TO SCR15X-VARIABLE(ARRAY-SUB)
+324300           ELSE
+324400              MOVE 'INVALID - EMPLOYEES ASSIGNED'
+324500                     TO SCR15X-VARIABLE(ARRAY-SUB)
+324600           END-IF
+324700        ELSE
+324800           IF PSTCA-SUB = 2
+324900              MOVE 'INVALID - TURN WORKING'
+325000                     TO SCR15X-VARIABLE(ARRAY-SUB)
+325100           ELSE
+325200              MOVE 'INVALID - TURN WORKING'
+325300                     TO SCR15X-VARIABLE(ARRAY-SUB)
+325400           END-IF
+325500        END-IF
+325600     END-IF
+325700     MOVE HOLD-UFP TO WS-UFP.
+325800*
+325900 P5000-2ND-BRAKEMAN.
+326000*
+326100     MOVE SPACES TO WS-UFP-TURN-KEY
+326200     MOVE SCR15X-DIST TO WS-UFP-DIST
+326300     MOVE SCR15X-SUB-DIST TO WS-UFP-SUB-DIST
+326400     MOVE SCR15X-POOL TO WS-UFP-POOL
+326500     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+326600        UNTIL ARRAY-SUB > ARRAY-MAX
+326700              OR ERRORS-FOUND
+326800        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+326900           IF SCR15X-SEL(ARRAY-SUB) = 'X'
+327000              IF SCR15X-TURN(ARRAY-SUB) > SPACES
+327100                 IF SCR15X-CC(ARRAY-SUB) = 'CO'
+327200                    IF NOT (CO-BK-MARRIED OR B1-B2-MARRIED)
+327300
+327400*                      SEE IF "B2" IS DEFINED AS OPTIONAL FOR
+327500*                      THIS POOL, IF NOT CANNOT SPECIFY "2ND BK"
+327600*
+327700                       IF CNTL-POOL-B2-CRAFT NOT = 'O'
+327800                          SET ERRORS-FOUND TO TRUE
+327900                          MOVE -1
+328000                             TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+328100                          MOVE REV-VIDEO
+328200                               TO SCR15X-TURN-HI(ARRAY-SUB)
+328300                          IF CNTL-POOL-B2-CRAFT = 'N'
+328400                             IF PSTCA-SUB = 2
+328500                                MOVE 'DEUXIEME BK NON AUTORISE'
+328600                                   TO SCR15X-VARIABLE(ARRAY-SUB)
+328700                             ELSE
+328800                                MOVE '2ND BK NOT ALLOWED'
+328900                                   TO SCR15X-VARIABLE(ARRAY-SUB)
+329000                             END-IF
+329100                          ELSE
+329200                             IF PSTCA-SUB = 2
+329300                                MOVE 'DEUXIEME BK DEJA DEFINI'
+329400                                   TO SCR15X-VARIABLE(ARRAY-SUB)
+329500                             ELSE
+329600                                MOVE '2ND BK ALREADY DEFINED'
+329700                                   TO SCR15X-VARIABLE(ARRAY-SUB)
+329800                             END-IF
+329900                          END-IF
+330000                       ELSE
+330100                          MOVE SCR15X-TURN(ARRAY-SUB)
+330200                             TO WS-UFP-TURN
+330300                          MOVE SCR15X-CC(ARRAY-SUB) TO WS-UFP-CC
+330400                          MOVE WS-UFP-TURN-KEY TO UFPTURN
+330500                          PERFORM P8610-READ-UFPTURN-UPDATE
+330600                          IF SUCCESS
+330700                             IF CONDUCTOR-GETS-2-BRAKEMEN
+330800                                MOVE SPACE TO UFP-2ND-BK-FLAG
+330900                             ELSE
+331000                                SET CONDUCTOR-GETS-2-BRAKEMEN
+331100                                    TO TRUE
+331200                             END-IF
+331300                             PERFORM P8630-REWRITE-UFPTURN
+331400                             MOVE SPACE TO SCR15X-SEL(ARRAY-SUB)
+331500                          ELSE
+331600                            IF NOT (NO-RECORD-FND OR END-OF-FILE)
+331700                               MOVE 'P5000' TO ERR-PARAGRAPH
+331800                               MOVE UFPTURN TO ERR-KEY
+331900                               PERFORM P9999-GOT-PROBLEM
+332000                            ELSE
+332100                               SET ERRORS-FOUND TO TRUE
+332200                               MOVE -1
+332300                               TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+332400                               MOVE REV-VIDEO
+332500                               TO SCR15X-TURN-HI(ARRAY-SUB)
+332600                               IF PSTCA-SUB = 2
+332700                                  MOVE 'TOUR PAS TROUVE'
+332800                                     TO SCR15X-VARIABLE(ARRAY-SUB)
+332900                               ELSE
+333000                                  MOVE 'TURN NOT FOUND'
+333100                                     TO SCR15X-VARIABLE(ARRAY-SUB)
+333200                               END-IF
+333300                            END-IF
+333400                          END-IF
+333500                       END-IF
+333600                    ELSE
+333700                       SET ERRORS-FOUND TO TRUE
+333800                       MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+333900                       MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+334000                       IF PSTCA-SUB = 2
+334100                          MOVE 'FONCTION INVALIDE - BK MARIE'
+334200                             TO SCR15X-VARIABLE(ARRAY-SUB)
+334300                       ELSE
+334400                          MOVE 'INVALID FUNCTION - BK MARRIED'
+334500                             TO SCR15X-VARIABLE(ARRAY-SUB)
+334600                       END-IF
+334700                    END-IF
+334800                 ELSE
+334900                    SET ERRORS-FOUND TO TRUE
+335000                    MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+335100                    MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+335200                    IF PSTCA-SUB = 1
+335300                       MOVE 'INVALID ENTRY CODE'
+335400                         TO SCR15X-VARIABLE(ARRAY-SUB)
+335500                    ELSE
+335600                       MOVE 'CODE D''ENTREE NON VALIDE'
+335700                         TO SCR15X-VARIABLE(ARRAY-SUB)
+335800                    END-IF
+335900                 END-IF
+336000              ELSE
+336100                 SET ERRORS-FOUND TO TRUE
+336200                 MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+336300                 MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+336400                 IF PSTCA-SUB = 2
+336500                    MOVE 'NUMERO DE TOUR NECESSAIRE'
+336600                           TO SCR15X-VARIABLE(ARRAY-SUB)
+336700                 ELSE
+336800                    MOVE 'TURN NUMBER IS REQUIRED'
+336900                           TO SCR15X-VARIABLE(ARRAY-SUB)
+337000                 END-IF
+337100              END-IF
+337200           ELSE
+337300              SET ERRORS-FOUND TO TRUE
+337400              MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+337500              MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+337600              IF PSTCA-SUB = 1
+337700                 MOVE 'INVALID ENTRY CODE'
+337800                   TO SCR15X-VARIABLE(ARRAY-SUB)
+337900              ELSE
+338000                 MOVE 'CODE D''ENTREE NON VALIDE'
+338100                   TO SCR15X-VARIABLE(ARRAY-SUB)
+338200              END-IF
+338300           END-IF
+338400        END-IF
+338500     END-PERFORM
+338600     IF NOT ERRORS-FOUND
+338700        SET ENTER-KEY TO TRUE
+338800        PERFORM P1000-INQUIRY
+338900*            'POOL SUCCESSFULLY UPDATED'
+339000        MOVE 'P003' TO MSGLOG-CODE
+339100     ELSE
+339200*            'POOL UPDATED WITH ABOVE EXCEPTIONS'
+339300        MOVE 'P026' TO MSGLOG-CODE
+339400     END-IF.
+339500*
+339600 P6000-TRANSFER.
+339700*
+339800     MOVE SPACES TO WS-UFP-TURN-KEY
+339900     MOVE SCR15X-DIST TO WS-UFP-DIST
+340000     MOVE SCR15X-SUB-DIST TO WS-UFP-SUB-DIST
+340100     MOVE SCR15X-POOL TO WS-UFP-POOL
+340200     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+340300             UNTIL ARRAY-SUB > ARRAY-MAX
+340400                   OR ERRORS-FOUND
+340500        MOVE SPACES TO SCR15X-VARIABLE(ARRAY-SUB)
+340600        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+340700           IF SCR15X-SEL(ARRAY-SUB) = ('X' OR 'T')
+340800              MOVE SPACE TO SCR15X-SEL(ARRAY-SUB)
+340900              IF SCR15X-TURN(ARRAY-SUB) > SPACES
+341000                 MOVE SCR15X-TURN(ARRAY-SUB) TO WS-UFP-TURN
+341100                 MOVE SCR15X-CC(ARRAY-SUB) TO WS-UFP-CC
+341200                 MOVE 0 TO ASSOCIATED-TURN-FLAG
+341300                 MOVE WS-UFP-TURN-KEY TO UFPTURN
+341400                 PERFORM P8600-READ-UFPTURN
+341500                 IF SUCCESS
+341600                    PERFORM VARYING K FROM 1 BY 1
+341700                       UNTIL WS-CRAFT-CODE(K) = POOL-CRAFT-CODE2
+341800                       OR K > CRAFT-ARRAY-MAX
+341900                    END-PERFORM
+342000*CNC0499-BEG
+342100**           ONLY ERROR FOR MARRIED TURN TRANSFER WHEN THIS
+342200**           IS THE SUBORDINATE MARRIED TURN
+342300*                   IF K > CRAFT-ARRAY-MAX
+342400*                      OR WS-ASSOC-CRAFT(K) NOT > SPACE
+342500*                      PERFORM VARYING K FROM 1 BY 1
+342600*                         UNTIL K > CRAFT-ARRAY-MAX
+342700*                         OR WS-ASSOC-CRAFT(K) = POOL-CRAFT-CODE2
+342800*                      END-PERFORM
+342900*CNC0499-END        END-IF
+343000                    IF K NOT > CRAFT-ARRAY-MAX
+343100                       AND WS-ASSOC-CRAFT(K) > SPACE
+343200                       SET ERRORS-FOUND TO TRUE
+343300                       MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+343400                       MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+343500                       IF PSTCA-SUB = 2
+343600                         MOVE 'NE PEUT PAS TRANS TOURS <MARIES>'
+343700                            TO SCR15X-VARIABLE(ARRAY-SUB)
+343800                       ELSE
+343900                         MOVE 'CANNOT TRANSFER "MARRIED" TURNS'
+344000                            TO SCR15X-VARIABLE(ARRAY-SUB)
+344100                       END-IF
+344200                    ELSE
+344300                       IF UFP-ON-BOARD AND
+344400                          IN-TOWN      AND
+344500                          DIST OF WS-UFP = DIST2 AND
+344600                          SUB-DIST OF WS-UFP = SUB-DIST2 AND
+344700                          POOL-NAME OF WS-UFP = POOL-NAME2
+344800                          SET ERRORS-FOUND TO TRUE
+344900                          MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+345000                          MOVE REV-VIDEO
+345100                             TO SCR15X-SEL-HI(ARRAY-SUB)
+345200                          IF PSTCA-SUB = 2
+345300                            MOVE 'TOUR DEJA AU TEM D''AFFECTATION'
+345400                                    TO SCR15X-VARIABLE(ARRAY-SUB)
+345500                          ELSE
+345600                            MOVE 'TURN ALREADY AT "HOME"'
+345700                                    TO SCR15X-VARIABLE(ARRAY-SUB)
+345800                          END-IF
+345900                       ELSE
+346000                          MOVE SPACES TO P915-COMMAREA-PARMS
+346100                          SET P915-TRANSFER-FUNCTION TO TRUE
+346200                          MOVE UFPTURN-AREA TO P915-TURN-PARM
+346300                          EXEC CICS LINK
+346400                                    PROGRAM(P915-PGM)
+346500                                    COMMAREA(P915-COMMAREA-PARMS)
+346600                                    LENGTH(P915-LGTH)
+346700                                    RESP(WS-RESPONSE)
+346800                          END-EXEC
+346900                          MOVE WS-RESPONSE TO FILE-STATUS
+347000                          IF NOT SUCCESS
+347100                             MOVE 'P6000-1' TO ERR-PARAGRAPH
+347200                             PERFORM P9999-GOT-PROBLEM
+347300                          END-IF
+347400*CNC0499-BEG
+347500**                        NOW PERFORM 915 FOR THE SUBORDINATE
+347600**                        MARRIED TURN WHEN THIS IS THE PRIMARY
+347610*02/22/17 - BEG
+347620*** MODIFIED P915 TO CHECK FOR SUBORDINATE MARRIED TURN AND
+347630*** PROCESS WITHIN SUBROUTINE
+347700***                       PERFORM P6010-CHECK-SUBORD-MARRIED
+347710*02/22/17 - END
+347800*CNC0499-END
+347900                       END-IF
+348000                    END-IF
+348100                 ELSE
+348200                    IF NO-RECORD-FND OR END-OF-FILE
+348300                       SET ERRORS-FOUND TO TRUE
+348400                       MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+348500                       MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+348600                       IF PSTCA-SUB = 2
+348610                          MOVE 'AUCUNE INDICATION TOUR AU DOSS'
+348620                                TO SCR15X-VARIABLE(ARRAY-SUB)
+348630                       ELSE
+348640                          MOVE 'NO RECORD OF TURN'
+348650                                TO SCR15X-VARIABLE(ARRAY-SUB)
+348660                       END-IF
+348670                    ELSE
+348680                       MOVE 'P6000-2' TO ERR-PARAGRAPH
+348690                       MOVE UFPTURN TO ERR-KEY
+348700                       PERFORM P9999-GOT-PROBLEM
+348800                    END-IF
+348900                 END-IF
+349000              ELSE
+349100                 SET ERRORS-FOUND TO TRUE
+349200                 MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+349300                 MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+349400                 IF PSTCA-SUB = 2
+349500                    MOVE 'NUMERO DE TOUR NECESSAIRE'
+349600                           TO SCR15X-VARIABLE(ARRAY-SUB)
+349700                 ELSE
+349800                    MOVE 'TURN NUMBER IS REQUIRED'
+349900                           TO SCR15X-VARIABLE(ARRAY-SUB)
+350000                 END-IF
+350100              END-IF
+350200           ELSE
+350300              SET ERRORS-FOUND TO TRUE
+350400              MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+350500              MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+350600              IF PSTCA-SUB = 1
+350700                 MOVE 'INVALID ENTRY CODE'
+350800                   TO SCR15X-VARIABLE(ARRAY-SUB)
+350900              ELSE
+351000                 MOVE 'CODE D''ENTREE NON VALIDE'
+351100                   TO SCR15X-VARIABLE(ARRAY-SUB)
+351200              END-IF
+351300           END-IF
+351400        END-IF
+351500     END-PERFORM
+351600     IF NOT ERRORS-FOUND
+351700        SET ENTER-KEY TO TRUE
+351800        PERFORM P1000-INQUIRY
+351900*            'POOL SUCCESSFULLY UPDATED'
+352000        MOVE 'P003' TO MSGLOG-CODE
+352100     ELSE
+352200*            'POOL UPDATED WITH ABOVE EXCEPTIONS'
+352300        MOVE 'P026' TO MSGLOG-CODE
+352400     END-IF.
+352500*CNC0499-BEG
+352600*
+352700 P6010-CHECK-SUBORD-MARRIED.
+352800*
+352900     IF K NOT > CRAFT-ARRAY-MAX
+353000     OR WS-ASSOC-CRAFT(K) NOT > SPACE
+353100        PERFORM VARYING K FROM 1 BY 1
+353200           UNTIL K > CRAFT-ARRAY-MAX
+353300           OR WS-ASSOC-CRAFT(K)
+353400                           = POOL-CRAFT-CODE2
+353500        END-PERFORM
+353600        IF K NOT > CRAFT-ARRAY-MAX
+353700        AND WS-ASSOC-CRAFT(K) > SPACE
+353800           MOVE WS-CRAFT-CODE(K) TO WS-UFP-CC
+353900           MOVE WS-UFP-TURN-KEY TO UFPTURN
+354000           PERFORM P8600-READ-UFPTURN
+354100           IF SUCCESS
+354110              MOVE UFPTURN-AREA TO P915-TURN-PARM
+354120              EXEC CICS LINK
+354130                   PROGRAM(P915-PGM)
+354140                   COMMAREA(P915-COMMAREA-PARMS)
+354150                   LENGTH(P915-LGTH)
+354160                   RESP(WS-RESPONSE)
+354170              END-EXEC
+354180              MOVE WS-RESPONSE TO FILE-STATUS
+354190              IF NOT SUCCESS
+354191                 MOVE 'P6010-1' TO ERR-PARAGRAPH
+354192                 PERFORM P9999-GOT-PROBLEM
+354193              END-IF
+354194           END-IF
+354195        END-IF
+354196     END-IF
+354197     .
+354198*CNC0499-END
+497000*CNC0600-B
+497100 P6100-SET-EMP-STATUS-FLAGS.
+497200      MOVE SPACES TO WS-EMP-STATUS-FLAG
+497300      MOVE IN-OUT-TERMINAL            TO AT-HOME-TERM-FLAG
+497400      MOVE EMP-NBR OF WS-MSTR         TO MSTR3NBRK
+497500      PERFORM P8560-READ-MSTR3-READ
+497600      EVALUATE TRUE
+497700         WHEN SUCCESS
+497800            MOVE ZEROS                TO DATE-CONVERSION-PARMS
+497900            SET PARM-ADD              TO TRUE
+498000            MOVE WS-LOCAL-DATE        TO PARM-PRI-DATE-GREG
+498100            MOVE WS-LOCAL-TIME        TO PARM-PRI-HRMN
+498200            MOVE WS-RESET-BK-LEAD-TIME TO PARM-SEC-HRMN
+498300            EXEC CICS LINK
+498400                PROGRAM(P903-PGM)
+498500                COMMAREA(DATE-CONVERSION-PARMS)
+498600                LENGTH(P903-LGTH)
+498700                RESP(WS-RESPONSE)
+498800            END-EXEC
+498900            MOVE WS-RESPONSE            TO FILE-STATUS
+499000            IF NOT SUCCESS
+499100               MOVE 'P6100-1'           TO ERR-PARAGRAPH
+499200               MOVE 'P903LINK'          TO ERR-KEY
+499300               PERFORM P9999-GOT-PROBLEM
+499400            END-IF
+499500            MOVE PARM-RES-DATE-GREG     TO WS-WRR-6HRS-AFTER-DATE
+499700            MOVE PARM-RES-HRMN          TO WS-WRR-6HRS-AFTER-TIME
+                  SET WS-DO-NOT-CHECK-60-192-STATUS TO TRUE
+499900            IF (WS-LOCAL-CUR-DTTM-YYMMDDHHSS
+                           > MSTR3-SYSTEM-RESET-BRK AND
+                              MSTR3-SYSTEM-RESET-BRK > '0000000000')
+                        SET WS-CHECK-60-192-STATUS TO TRUE
+      **  IF CURRENT TIME > RESET BREAK TIME, THEN CHECK FOR 60/192
+      **  VALIDATION ONLY
+                  ELSE
+                     IF WS-LOCAL-CUR-DTTM-YYMMDDHHSS >
+                                            MSTR3-7DAY-END-PERIOD-CH
+                           AND MSTR3-7DAY-END-PERIOD > '0000000000'
+500210                  SET WS-EMP-STATUS-RED TO TRUE
+                     END-IF
+                  END-IF
+                  IF NOT WS-EMP-STATUS-RED AND
+                                      NOT WS-CHECK-60-192-STATUS
+499900               IF (MSTR3-7DAY-END-PERIOD-CH
+                                > WS-WRR-6HRS-AFTER-CH)
+                            OR MSTR3-7DAY-END-PERIOD NOT > '0000000000'
+                        SET WS-CHECK-60-192-STATUS TO TRUE
+500200               ELSE
+                        IF AT-HOME-TERM
+500210                     SET WS-EMP-STATUS-RED TO TRUE
+500200                  ELSE
+                           IF NOT-AT-HOME-TERM
+500210                        SET WS-EMP-STATUS-YELLOW TO TRUE
+501800                     END-IF
+501800                  END-IF
+501800               END-IF
+501800            END-IF
+                  IF WS-CHECK-60-192-STATUS AND NOT WS-EMP-STATUS-RED
+500010               PERFORM P6200-GET-EMP-REST-STATUS
+                  END-IF
+501900         WHEN NO-RECORD-FND
+      * WHEN NO RESET DETAILS, CHECK THE 60/192
+500010              PERFORM P6200-GET-EMP-REST-STATUS
+502100         WHEN OTHER
+502200            MOVE 'P6100-2' TO ERR-PARAGRAPH
+502300            MOVE MSTR3NBRK TO ERR-KEY
+502400            PERFORM P9999-GOT-PROBLEM
+502500      END-EVALUATE
+502600     .
+502700*
+502800 P6200-GET-EMP-REST-STATUS.
+502900* CHECK FOR 07 DAYS TTOD
+511400     INITIALIZE PS08-COMMAREA-PARMS
+511500     SET PS08-INQUIRY-FUN            TO TRUE
+511600     MOVE EMP-NBR OF WS-MSTR            TO PS08-EMP-NBR
+512000     MOVE 07                         TO PS08-CALC-NBR-DAYS
+512100     SET DE-YYMMDD-FORMAT            TO TRUE
+512200     MOVE WS-LOCAL-DATE              TO DE-YYMMDD
+512300     PERFORM P8998-DATEEDIT
+512400     MOVE DE-CCYYMMDD                TO PS08-OD-DATE-CENT
+512500                                        PS08-CALC-DATE-CENT
+512600     MOVE WS-LOCAL-TIME              TO PS08-OD-TIME
+512700                                        PS08-CALC-TIME
+504000     PERFORM P6400-LINK-PS08-PGM
+504100
+504900     IF NOT SUCCESS
+505000        MOVE 'P6200-1'                  TO ERR-PARAGRAPH
+505100        MOVE 'PS08LINK'                 TO ERR-KEY
+505200        PERFORM P9999-GOT-PROBLEM
+505300     END-IF
+505400     IF NOT PS08-NO-ERRORS
+505500        MOVE 'P6200-2'                  TO ERR-PARAGRAPH
+505600        MOVE PS08-RETURN-ERRORS         TO ERR-KEY
+505700        MOVE 'CHECK S08 INPUT PARAMETERS'
+505800                                     TO ERR-SENTENCE
+505900        PERFORM P9999-GOT-PROBLEM
+506000     ELSE
+506200        IF AT-HOME-TERM
+506300           AND NOT WS-EMP-STATUS-RED
+506400           IF PS08-TOTAL-TIME-ON-DUTY >= 6000
+506500              SET WS-EMP-STATUS-RED TO TRUE
+506600           ELSE
+506700              IF PS08-TOTAL-TIME-ON-DUTY > 5400
+506800                 SET WS-EMP-STATUS-RED TO TRUE
+506900              ELSE
+507000                 IF PS08-TOTAL-TIME-ON-DUTY > 4800
+507100                    SET WS-EMP-STATUS-YELLOW TO TRUE
+507200                 END-IF
+507300              END-IF
+507400           END-IF
+507500**** * CHECK FOR 28 DAYS TTOD
+507600           IF NOT WS-EMP-STATUS-RED
+507700              PERFORM P6300-GET-28D-TOTAL-OD
+507800              IF PS08-TOTAL-TIME-ON-DUTY >= 19200
+507900                 SET WS-EMP-STATUS-RED TO TRUE
+508000              ELSE
+508100                 IF PS08-TOTAL-TIME-ON-DUTY > 18600
+508200                    SET WS-EMP-STATUS-RED TO TRUE
+508300
+508400                 ELSE
+508500                    IF PS08-TOTAL-TIME-ON-DUTY > 18000
+508600                       AND NOT WS-EMP-STATUS-RED
+508700                       SET WS-EMP-STATUS-YELLOW TO TRUE
+508800
+508900                    END-IF
+509000                 END-IF
+509100              END-IF
+509200           END-IF
+509300        ELSE
+509400           IF NOT-AT-HOME-TERM
+509500              AND NOT WS-EMP-STATUS-RED
+509600              IF PS08-TOTAL-TIME-ON-DUTY >= 6000
+509700                 SET WS-EMP-STATUS-YELLOW TO TRUE
+509800              END-IF
+509900              IF NOT WS-EMP-STATUS-RED
+510000                 PERFORM P6300-GET-28D-TOTAL-OD
+510100                 IF PS08-TOTAL-TIME-ON-DUTY >= 19200
+510200                    SET WS-EMP-STATUS-YELLOW TO TRUE
+510300                 END-IF
+510400              END-IF
+510500           END-IF
+510600        END-IF
+510700     END-IF
+510800     .
+510900*
+511000*=================================================================
+511100 P6300-GET-28D-TOTAL-OD.
+511200*=================================================================
+511300
+511400     INITIALIZE PS08-COMMAREA-PARMS
+511500     SET PS08-INQUIRY-FUN            TO TRUE
+511600     MOVE EMP-NBR OF WS-MSTR            TO PS08-EMP-NBR
+511700*    MOVE PARM-RES-GREG-CENT         TO PS08-CALC-CE
+511800*    MOVE PARM-RES-DATE-GREG         TO PS08-CALC-DATE
+511900*    MOVE PARM-RES-HRMN              TO PS08-CALC-TIME
+512000     MOVE 28                         TO PS08-CALC-NBR-DAYS
+512100     SET DE-YYMMDD-FORMAT            TO TRUE
+512200     MOVE WS-LOCAL-DATE              TO DE-YYMMDD
+512300     PERFORM P8998-DATEEDIT
+512400     MOVE DE-CCYYMMDD                TO PS08-OD-DATE-CENT
+512500                                        PS08-CALC-DATE-CENT
+512600     MOVE WS-LOCAL-TIME              TO PS08-OD-TIME
+512700                                        PS08-CALC-TIME
+512800     PERFORM P6400-LINK-PS08-PGM
+513600     IF NOT SUCCESS
+513700        MOVE 'P6300-1'               TO ERR-PARAGRAPH
+513800        MOVE 'PS08LINK'              TO ERR-KEY
+513900        PERFORM P9999-GOT-PROBLEM
+514000     END-IF
+514100     IF NOT PS08-NO-ERRORS
+514200        MOVE 'P6300-2'               TO ERR-PARAGRAPH
+514300        MOVE PS08-RETURN-ERRORS      TO ERR-KEY
+514400        MOVE 'CHECK S08 INPUT PARAMETERS'
+514500                                     TO ERR-SENTENCE
+514600        PERFORM P9999-GOT-PROBLEM
+514700     END-IF
+514800     .
+514900 P6400-LINK-PS08-PGM.
+515000     EXEC CICS LINK
+515100               PROGRAM(PS08-PGM)
+515200               COMMAREA(PS08-COMMAREA-PARMS)
+515300               LENGTH(PS08-LGTH)
+515400               RESP(WS-RESPONSE)
+515500     END-EXEC
+515600     MOVE WS-RESPONSE                TO FILE-STATUS
+515700     .
+515900*CNC0600-E
+354199*
+354200 P6500-MOVE-TURN.
+354201*
+354202     PERFORM P8800-GET-CURRENT-TIME
+354203     SET NOTHING-SELECTED        TO TRUE
+354204
+354205     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+354206        UNTIL ARRAY-SUB > ARRAY-MAX
+354207        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+354208          SET LINE-WAS-SELECTED     TO TRUE
+354209          IF SCR15X-SEL(ARRAY-SUB) = 'X' OR 'M'
+354210            IF P15XCA-TURN-KEY(ARRAY-SUB) NOT > SPACES
+354220               SET ERRORS-FOUND  TO TRUE
+354230               MOVE -1           TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+354240               MOVE REV-VIDEO    TO SCR15X-SEL-HI(ARRAY-SUB)
+354250*                   'NO RECORD AVAILABLE FOR MOVE'
+354260               MOVE 'N094'       TO MSGLOG-CODE
+354270               MOVE ARRAY-MAX    TO ARRAY-SUB
+354280            END-IF
+354290            MOVE P15XCA-TURN-KEY(ARRAY-SUB)
+354300                                 TO UFPTURN
+354400            PERFORM P8600-READ-UFPTURN
+354500            IF NOT ERRORS-FOUND
+354600               IF NOT UFP-ON-BOARD
+354700                  SET ERRORS-FOUND
+354800                                 TO TRUE
+354900                  MOVE -1        TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+355000                  MOVE REV-VIDEO
+355100                                 TO SCR15X-SEL-HI(ARRAY-SUB)
+355200*                 MOVE 'MUST BE ON-BOARD TO MOVE'
+355300                  MOVE 'M147'    TO MSGLOG-CODE
+355400                  MOVE ARRAY-MAX  TO ARRAY-SUB
+355500               END-IF
+355600            END-IF
+355700            IF NOT ERRORS-FOUND
+355800               PERFORM P6510-EDIT-VAR4-ENTRY
+355900               IF NOT ERRORS-FOUND
+356000                  PERFORM P6520-MOVE-PROCESS
+356100                  MOVE SPACE     TO SCR15X-SEL(ARRAY-SUB)
+356200               END-IF
+356300            END-IF
+356400          ELSE
+356500            SET ERRORS-FOUND     TO TRUE
+356600            MOVE -1              TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+356700            MOVE REV-VIDEO       TO SCR15X-SEL-HI(ARRAY-SUB)
+356800*                'INVALID CODE MSG'
+356900            MOVE 'I041'          TO MSGLOG-CODE
+357000          END-IF
+357100        END-IF
+357200     END-PERFORM
+357300
+357400     IF NOT ERRORS-FOUND
+357500        IF NOTHING-SELECTED
+357600           SET ERRORS-FOUND      TO TRUE
+357700*               'NO SELECTIONS FOUND'
+357800           MOVE 'N048'           TO MSGLOG-CODE
+357900           MOVE -1               TO SCR15X-FUNCTION-CURSOR
+358000        ELSE
+358100           SET ENTER-KEY         TO TRUE
+358200           PERFORM P1000-INQUIRY
+358300*               'POOL SUCCESSFULLY UPDATED'
+358400           MOVE 'P003'           TO MSGLOG-CODE
+358500        END-IF
+358600     END-IF.
+358700*
+358800 P6510-EDIT-VAR4-ENTRY.
+358900*
+359000     MOVE SCR15X-VARIABLE(ARRAY-SUB) TO WS-VARIABLE-LINE-4
+359100
+359200     IF  SCR15X-DIST     = WS-VL4-DIST
+359300     AND SCR15X-SUB-DIST = WS-VL4-SDIST
+359400     AND SCR15X-POOL     = WS-VL4-POOL
+359500     AND SCR15X-BOARD    = WS-VL4-TERM
+359600        MOVE -1           TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+359700        MOVE REV-VIDEO    TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+359800*            'NO CHANGE TO MOVE-TO BOARD'
+359900        MOVE 'N095'       TO MSGLOG-CODE
+360000        PERFORM P9000-SEND-MAP-AND-RETURN
+360100     END-IF
+360200
+360300     MOVE SPACES          TO WORK-CNTLKEY
+360400     MOVE '03'            TO WK-CNTL-REC-TYPE
+360500     MOVE WS-VL4-DIST     TO WK-CNTL-DIST
+360600     MOVE WS-VL4-SDIST    TO WK-CNTL-SUB-DIST
+360700     MOVE WS-VL4-POOL     TO WK-CNTL-POOL
+360800     MOVE 'F'             TO WK-CNTL-POOL-TYPE
+360900     MOVE WORK-CNTLKEY    TO CNTLKEY
+361000     EXEC CICS READ
+361100               DATASET(CNTL-FILE-VIA-CNTLKEY)
+361200               INTO(WS-CNTL-FILE)
+361300               LENGTH(CNTLFILE-RLGTH)
+361400               RIDFLD(CNTLKEY)
+361500               KEYLENGTH(CNTLFILE-KLGTH)
+361600               RESP(WS-RESPONSE)
+361700     END-EXEC
+361800     MOVE WS-RESPONSE TO FILE-STATUS
+361900     IF NOT SUCCESS
+362000        MOVE -1        TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+362100        MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+362200*            ENTER-POOL-MSG
+362300        MOVE 'M014' TO MSGLOG-CODE
+362400        PERFORM P9000-SEND-MAP-AND-RETURN
+362500     END-IF
+362600
+362700     MOVE WS-VL4-TERM TO WS-BOARD
+362800     IF POSITION-BOARD
+362900        MOVE WS-VL4-TERM TO I
+363000        IF I > 0
+363100           IF CNTL-AWAY-TERM(I) > SPACE
+363200              CONTINUE
+363300           ELSE
+363400              MOVE -1     TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+363500              MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+363600*                  'INVALID BOARD FOR THIS POOL'
+363700              MOVE 'I066' TO MSGLOG-CODE
+363800              PERFORM P9000-SEND-MAP-AND-RETURN
+363900           END-IF
+364000        ELSE
+364100           IF I NOT = 0
+364200              MOVE -1     TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+364300              MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+364400*                  'INVALID BOARD FOR THIS POOL'
+364500              MOVE 'I066' TO MSGLOG-CODE
+364600              PERFORM P9000-SEND-MAP-AND-RETURN
+364700           END-IF
+364800        END-IF
+364900     ELSE
+365000        MOVE -1           TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+365100        MOVE REV-VIDEO    TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+365200*            'INVALID BOARD FOR THIS POOL'
+365300        MOVE 'I066'       TO MSGLOG-CODE
+365400        PERFORM P9000-SEND-MAP-AND-RETURN
+365500     END-IF
+365600*
+365700*    VERIFY THAT THE CRAFT ARRAYS AND MARRIED CODES ARE THE
+365800*    SAME FOR BOTH POOLS.
+365900*
+366000     IF CNTL-POOL-CRAFTS NOT = WS-SAVE-POOL-CRAFTS
+366100        MOVE -1           TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+366200        MOVE REV-VIDEO    TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+366300*       CRAFT ARRAY MUST BE THE SAME FOR BOTH POOLS
+366400        MOVE 'P092'    TO MSGLOG-CODE
+366500        PERFORM P9000-SEND-MAP-AND-RETURN
+366600     END-IF
+366700     IF CNTL-POOL-MARRIED-CODES NOT = WS-SAVE-POOL-MARRIED
+366800        MOVE -1           TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+366900        MOVE REV-VIDEO    TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+367000*       MARRIED CODES MUST BE THE SAME FOR BOTH POOLS
+367100        MOVE 'P093' TO MSGLOG-CODE
+367200        PERFORM P9000-SEND-MAP-AND-RETURN
+367300     END-IF
+367400
+367500     SET DE-YYMMDD-FORMAT            TO TRUE
+367600     MOVE WS-VL4-DATE                TO DE-YYMMDD
+367700     PERFORM P8998-DATEEDIT
+367800     IF DE-INVALID-DATE OR
+367900        WS-VL4-TIME NOT NUMERIC OR
+368000        WS-VL4-HR > '23' OR
+368100        WS-VL4-MN > '59'
+368200         SET ERRORS-FOUND TO TRUE
+368300         MOVE -1        TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+368400         MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+368500*             INVALID-DATE-TIME-MSG
+368600         MOVE 'I042' TO MSGLOG-CODE
+368700         PERFORM P9000-SEND-MAP-AND-RETURN
+368800     ELSE
+368900*
+369000*       COVERT VL4 IN LOCAL TIME TO VL4 IN SYSTEM TIME
+369100*
+369200        MOVE SPACES                 TO TZ-PARAMETERS
+369300        MOVE PSTCA-TIME-ZONE        TO TZ-IN-ZONE
+369400        MOVE WS-VL4-DATE-TIME       TO TZ-IN-DATE-TIME
+369500        SET TZ-OUT-EASTERN-ZONE     TO TRUE
+369600        PERFORM P8996-TIMEZONE
+369700        MOVE TZ-OUT-DATE-TIME       TO WS-VL4-DATE-TIME
+369800
+369900*       IF WS-VL4-DATE-TIME > PRESENT-TIME
+370000        IF TZ-OUT-DATE-TIME-CENT > WS-PRESENT-TIME-CENT
+370100           SET ERRORS-FOUND TO TRUE
+370200           MOVE -1        TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+370300           MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+370400*               'CANNOT MOVE TO FUTURE DATE'
+370500           MOVE 'C097' TO MSGLOG-CODE
+370600           PERFORM P9000-SEND-MAP-AND-RETURN
+370700        END-IF
+370800     END-IF
+370900*
+371000*    CHECK FOR DCAN'D TURN MOVE RESTRICTIONS
+371100*
+371200     MOVE P15XCA-TURN-KEY(ARRAY-SUB)
+371300                                 TO CARRTURN
+371400     EXEC CICS READ
+371500               DATASET(CARRTURN-DATASET)
+371600               INTO(WS-CARRIED-TURN)
+371700               LENGTH(CARRTURN-RLGTH)
+371800               RIDFLD(CARRTURN)
+371900               KEYLENGTH(CARRTURN-KLGTH)
+372000               RESP(WS-RESPONSE)
+372100     END-EXEC
+372200     MOVE WS-RESPONSE TO FILE-STATUS
+372300     IF SUCCESS AND CARRIED-DCAN-PLACEMENT
+372400        IF CARRIED-DCAN-CALLED-FLAG = 'C'
+372500           IF  WS-VL4-DIST     = CARRIED-DCAN-TO-DIST
+372600           AND WS-VL4-SDIST    = CARRIED-DCAN-TO-SUB-DIST
+372700           AND WS-VL4-POOL     = CARRIED-DCAN-TO-POOL
+372800           AND WS-VL4-TERM     = CARRIED-DCAN-TO-TERM
+372900              CONTINUE
+373000           ELSE
+373100              SET ERRORS-FOUND TO TRUE
+373200              MOVE -1    TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+373300              MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+373400*                  'CAN ONLY MOVE DCAN TURN TO DCAN-TO BOARD'
+373500              MOVE 'C098' TO MSGLOG-CODE
+373600              PERFORM P9000-SEND-MAP-AND-RETURN
+373700           END-IF
+373800        ELSE
+373900           IF  WS-VL4-DIST     = CARRIED-DCAN-FROM-DIST
+374000           AND WS-VL4-SDIST    = CARRIED-DCAN-FROM-SUB-DIST
+374100           AND WS-VL4-POOL     = CARRIED-DCAN-FROM-POOL
+374200           AND WS-VL4-TERM     = CARRIED-DCAN-FROM-TERM
+374300              CONTINUE
+374400           ELSE
+374500              SET ERRORS-FOUND TO TRUE
+374600              MOVE -1    TO SCR15X-VARIABLE-CURSOR(ARRAY-SUB)
+374700              MOVE REV-VIDEO TO SCR15X-VARIABLE-HI(ARRAY-SUB)
+374800*                  'CAN ONLY MOVE DCAN TURN TO DCAN-FROM BOARD'
+374900              MOVE 'C099' TO MSGLOG-CODE
+375000              PERFORM P9000-SEND-MAP-AND-RETURN
+375100           END-IF
+375200        END-IF
+375300     END-IF.
+375400*
+375500 P6520-MOVE-PROCESS.
+375600*
+375700     MOVE SPACES                 TO P916-COMMAREA-PARMS
+375800     SET P916-MOVE-TURN-FUNCTION TO TRUE
+375900     MOVE P15XCA-TURN-KEY(ARRAY-SUB)
+376000                                 TO P916-TURN-PARM
+376100     MOVE SCR15X-DIST            TO P916-MOVE-FROM-DIST
+376200     MOVE SCR15X-SUB-DIST        TO P916-MOVE-FROM-SDIST
+376300     MOVE SCR15X-POOL            TO P916-MOVE-FROM-POOL
+376400     MOVE SCR15X-BOARD           TO P916-MOVE-FROM-TERM
+376500     MOVE WS-VL4-DIST            TO P916-MOVE-TO-DIST
+376600     MOVE WS-VL4-SDIST           TO P916-MOVE-TO-SDIST
+376700     MOVE WS-VL4-POOL            TO P916-MOVE-TO-POOL
+376800     MOVE WS-VL4-TERM            TO P916-MOVE-TO-TERM
+376900     MOVE WS-VL4-DATE-TIME       TO P916-MOVE-TO-DATE-TIME
+377000     MOVE TZ-SYSTEM-TIME-ZONE    TO P916-TIME-ZONE
+377100
+377200     EXEC CICS LINK
+377300               PROGRAM (P916-PGM)
+377400               COMMAREA(P916-COMMAREA-PARMS)
+377500               LENGTH  (P916-LGTH)
+377600               RESP    (WS-RESPONSE)
+377700     END-EXEC
+377800     MOVE WS-RESPONSE            TO FILE-STATUS
+377900     IF NOT SUCCESS
+378000        MOVE 'P6520-1'           TO ERR-PARAGRAPH
+378100        MOVE 'CALL CNP916 PROBLEM'
+378200                                 TO ERR-SENTENCE
+378300        PERFORM P9999-GOT-PROBLEM
+378400     END-IF.
+378500*
+378600 P7000-BLANK-TURN.
+378700*
+378800     MOVE SPACES TO WS-UFP-TURN-KEY
+378900     MOVE SCR15X-DIST TO WS-UFP-DIST
+379000     MOVE SCR15X-SUB-DIST TO WS-UFP-SUB-DIST
+379100     MOVE SCR15X-POOL TO WS-UFP-POOL
+379200     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+379300        UNTIL ARRAY-SUB > ARRAY-MAX
+379400              OR ERRORS-FOUND
+379500        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+379600           IF SCR15X-SEL(ARRAY-SUB) = 'X'
+379700              IF SCR15X-TURN(ARRAY-SUB) > SPACES
+379800                 IF SCR15X-CC(ARRAY-SUB) = ('B1' OR 'B2')
+379900                    MOVE SCR15X-TURN(ARRAY-SUB) TO WS-UFP-TURN
+380000                    MOVE SCR15X-CC(ARRAY-SUB) TO WS-UFP-CC
+380100                    MOVE WS-UFP-TURN-KEY TO UFPTURN
+380200                    PERFORM P8610-READ-UFPTURN-UPDATE
+380300                    IF SUCCESS
+380400                       IF UFP-BLANK-TURN
+380500                          MOVE SPACE TO UFP-BLANK-TURN-CODE
+380600                       ELSE
+380700                          SET UFP-BLANK-TURN TO TRUE
+380800                       END-IF
+380900                       PERFORM P8630-REWRITE-UFPTURN
+381000                       MOVE SPACE TO SCR15X-SEL(ARRAY-SUB)
+381100                    ELSE
+381200                       IF NOT (NO-RECORD-FND OR END-OF-FILE)
+381300                          MOVE 'P7000' TO ERR-PARAGRAPH
+381400                          MOVE UFPTURN TO ERR-KEY
+381500                          PERFORM P9999-GOT-PROBLEM
+381600                       ELSE
+381700                          SET ERRORS-FOUND TO TRUE
+381800                          MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+381900                          MOVE REV-VIDEO
+382000                             TO SCR15X-TURN-HI(ARRAY-SUB)
+382100                          IF PSTCA-SUB = 2
+382200                             MOVE 'TOUR PAS TROUVE'
+382300                                    TO SCR15X-VARIABLE(ARRAY-SUB)
+382400                          ELSE
+382500                             MOVE 'TURN NOT FOUND'
+382600                                    TO SCR15X-VARIABLE(ARRAY-SUB)
+382700                          END-IF
+382800                       END-IF
+382900                    END-IF
+383000                 ELSE
+383100                    SET ERRORS-FOUND TO TRUE
+383200                    MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+383300                    MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+383400                    IF PSTCA-SUB = 1
+383500                       MOVE 'INVALID ENTRY CODE'
+383600                         TO SCR15X-VARIABLE(ARRAY-SUB)
+383700                    ELSE
+383800                       MOVE 'CODE D''ENTREE NON VALIDE'
+383900                         TO SCR15X-VARIABLE(ARRAY-SUB)
+384000                    END-IF
+384100                 END-IF
+384200              ELSE
+384300                 SET ERRORS-FOUND TO TRUE
+384400                 MOVE -1 TO SCR15X-TURN-CURSOR(ARRAY-SUB)
+384500                 MOVE REV-VIDEO TO SCR15X-TURN-HI(ARRAY-SUB)
+384600                 IF PSTCA-SUB = 2
+384700                    MOVE 'NUMERO DE TOUR NECESSAIRE'
+384800                           TO SCR15X-VARIABLE(ARRAY-SUB)
+384900                 ELSE
+385000                    MOVE 'TURN NUMBER IS REQUIRED'
+385100                           TO SCR15X-VARIABLE(ARRAY-SUB)
+385200                 END-IF
+385300              END-IF
+385400           ELSE
+385500              SET ERRORS-FOUND TO TRUE
+385600              MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+385700              MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+385800              IF PSTCA-SUB = 1
+385900                 MOVE 'INVALID ENTRY CODE'
+386000                   TO SCR15X-VARIABLE(ARRAY-SUB)
+386100              ELSE
+386200                 MOVE 'CODE D''ENTREE NON VALIDE'
+386300                   TO SCR15X-VARIABLE(ARRAY-SUB)
+386400              END-IF
+386500           END-IF
+386600        END-IF
+386700     END-PERFORM
+386800     IF NOT ERRORS-FOUND
+386900        SET ENTER-KEY TO TRUE
+387000        PERFORM P1000-INQUIRY
+387100*            'POOL SUCCESSFULLY UPDATED'
+387200        MOVE 'P003' TO MSGLOG-CODE
+387300     ELSE
+387400*            'POOL UPDATED WITH ABOVE EXCEPTIONS'
+387500        MOVE 'P026' TO MSGLOG-CODE
+387600     END-IF.
+387700*
+387800 P7005-WRITE-TSQUEUE.
+387900*
+388000*
+388100*      WRITE MAP TSQUEUE
+388200*
+388300     EXEC CICS ASSIGN
+388400          EXTDS(WS-CICS-EXTDS-CODE)
+388500     END-EXEC
+388600*
+388700     IF SCREEN-HAS-EXT-ATTR
+388800        EXEC CICS SEND STRFIELD
+388900                  FROM(WS-STRFIELD)
+389000                  LENGTH(WS-STRFIELD-LGTH)
+389100                  RESP(WS-RESPONSE)
+389200        END-EXEC
+389300        MOVE WS-RESPONSE           TO FILE-STATUS
+389400        IF NOT SUCCESS
+389500           MOVE 'P7005-1'          TO ERR-PARAGRAPH
+389600           MOVE 'SEND STRFIELD'    TO ERR-KEY
+389700           PERFORM P9999-GOT-PROBLEM
+389800        END-IF
+389900     END-IF
+390000*
+390100     MOVE LENGTH OF WS-BUFFER-DATA TO WS-BUFFER-LGTH
+390200     EXEC CICS RECEIVE BUFFER
+390300               INTO(WS-BUFFER-DATA)
+390400               LENGTH(WS-BUFFER-LGTH)
+390500               RESP(WS-RESPONSE)
+390600     END-EXEC
+390700     MOVE WS-RESPONSE              TO FILE-STATUS
+390800     IF NOT SUCCESS AND NOT EOC
+390900        MOVE 'P7005-2'             TO ERR-PARAGRAPH
+391000        MOVE 'RECEIVE BUFFER'      TO ERR-KEY
+391100        PERFORM P9999-GOT-PROBLEM
+391200     END-IF
+391300     MOVE EIBCPOSN                 TO WS-BUFFER-CURSOR
+391400
+391500
+391600     MOVE LENGTH OF WS-BUFFER-AREA TO P15XTSQ-QLGTH
+391700     MOVE EIBTRMID                 TO P15XTSQ-MAP-TERM-ID
+391800     EXEC CICS WRITEQ TS
+391900               QUEUE(P15XTSQ-MAP-QUEUE-ID)
+392000               FROM(WS-BUFFER-AREA)
+392100               LENGTH(P15XTSQ-QLGTH)
+392200               RESP(WS-RESPONSE)
+392300     END-EXEC
+392400     MOVE WS-RESPONSE              TO FILE-STATUS
+392500     IF NOT SUCCESS
+392600        MOVE 'P7005-3'             TO ERR-PARAGRAPH
+392700        PERFORM P9999-GOT-PROBLEM
+392800     END-IF
+392900     MOVE EIBTRMID TO P15XTSQ-CA-TERM-ID
+393000     EXEC CICS WRITEQ TS
+393100               QUEUE(P15XTSQ-CA-QUEUE-ID)
+393200               FROM(PSTCOMM-AREA)
+393300               LENGTH(PSTCOMM-LGTH)
+393400               ITEM(P15XTSQ-QUEUE-ITEM)
+393500               RESP(WS-RESPONSE)
+393600     END-EXEC
+393700     MOVE WS-RESPONSE              TO FILE-STATUS
+393800     IF NOT SUCCESS
+393900        MOVE 'P7005-4'             TO ERR-PARAGRAPH
+394000        PERFORM P9999-GOT-PROBLEM
+394100     END-IF.
+394200*
+394300 P7010-READ-TSQUEUE.
+394400*
+394500*              READ THE MAPS TSQUEUE
+394600*
+394700     MOVE LENGTH OF WS-BUFFER-AREA TO P15XTSQ-QLGTH
+394800     MOVE EIBTRMID                 TO P15XTSQ-MAP-TERM-ID
+394900     EXEC CICS READQ TS
+395000               QUEUE(P15XTSQ-MAP-QUEUE-ID)
+395100               INTO(WS-BUFFER-AREA)
+395200               LENGTH(P15XTSQ-QLGTH)
+395300               ITEM(P15XTSQ-QUEUE-ITEM)
+395400               RESP(WS-RESPONSE)
+395500     END-EXEC
+395600     MOVE WS-RESPONSE              TO FILE-STATUS
+395700     IF SUCCESS
+395800        SET SEND-BUFFER            TO TRUE
+395900     ELSE
+396000        SET CREATE-SCREEN          TO TRUE
+396100        MOVE LOW-VALUES            TO PSTS15X
+396200     END-IF
+396300     MOVE EIBTRMID TO P15XTSQ-CA-TERM-ID
+396400     EXEC CICS READQ TS
+396500               QUEUE(P15XTSQ-CA-QUEUE-ID)
+396600               INTO(PSTCOMM-AREA)
+396700               LENGTH(PSTCOMM-LGTH)
+396800               ITEM(P15XTSQ-QUEUE-ITEM)
+396900               RESP(WS-RESPONSE)
+397000     END-EXEC
+397100     MOVE WS-RESPONSE TO FILE-STATUS
+397200     IF NOT SUCCESS
+397300        MOVE SPACES TO PSTCOMM-AREA
+397400     END-IF
+397500     PERFORM P7020-DELETE-TSQUEUE.
+397600*
+397700 P7020-DELETE-TSQUEUE.
+397800*
+397900     MOVE EIBTRMID TO P15XTSQ-MAP-TERM-ID
+398000     EXEC CICS DELETEQ TS
+398100               QUEUE(P15XTSQ-MAP-QUEUE-ID)
+398200               RESP(WS-RESPONSE)
+398300     END-EXEC
+398400     MOVE EIBTRMID TO P15XTSQ-CA-TERM-ID
+398500     EXEC CICS DELETEQ TS
+398600               QUEUE(P15XTSQ-CA-QUEUE-ID)
+398700               RESP(WS-RESPONSE)
+398800     END-EXEC.
+398900*
+399000 P7500-SCHEDULE.
+399100*
+399200     PERFORM VARYING ARRAY-SUB FROM 1 BY 1
+399300        UNTIL ARRAY-SUB > ARRAY-MAX
+399400              OR ERRORS-FOUND
+399500        IF SCR15X-SEL(ARRAY-SUB) > SPACE
+399600           IF SCR15X-SEL(ARRAY-SUB) = 'X'
+399700              AND SCR15X-TURN(ARRAY-SUB) > SPACES
+399800              PERFORM P9610-SETUP-SCR12D
+399900           ELSE
+400000              SET ERRORS-FOUND TO TRUE
+400100              MOVE -1 TO SCR15X-SEL-CURSOR(ARRAY-SUB)
+400200              MOVE REV-VIDEO TO SCR15X-SEL-HI(ARRAY-SUB)
+400300*                  INVALID-CODE-MSG
+400400              MOVE 'I041' TO MSGLOG-CODE
+400500           END-IF
+400600        END-IF
+400700     END-PERFORM.
+400800*
+400900 P8000-READ-CNTLFILE.
+401000*
+401100     EXEC CICS READ
+401200               DATASET(CNTL-FILE-VIA-CNTLKEY)
+401300               INTO(WS-CNTL-FILE)
+401400               LENGTH(CNTLFILE-RLGTH)
+401500               RIDFLD(CNTLKEY)
+401600               KEYLENGTH(CNTLFILE-KLGTH)
+401700               RESP(WS-RESPONSE)
+401800     END-EXEC
+401900     MOVE WS-RESPONSE               TO FILE-STATUS.
+402000*
+402100 P8010-STARTBR-SCHED.
+402200*
+402300     EXEC CICS STARTBR
+402400               DATASET(SJ-VIA-SCHEDKEY1)
+402500               RIDFLD(SCHEDKEY1)
+402600               GTEQ
+402700               RESP(WS-RESPONSE)
+402800     END-EXEC
+402900     MOVE WS-RESPONSE            TO FILE-STATUS
+403000     IF NOT (SUCCESS OR NO-RECORD-FND)
+403100        MOVE 'P8010-1'           TO ERR-PARAGRAPH
+403200        MOVE SCHEDKEY1           TO ERR-KEY
+403300        PERFORM P9999-GOT-PROBLEM
+403400     END-IF.
+403500*
+403600 P8020-READNEXT-SCHED.
+403700*
+403800     EXEC CICS READNEXT
+403900               DATASET(SJ-VIA-SCHEDKEY1)
+404000               INTO(WS-SCHED)
+404100               LENGTH(SCHEDKEY1-RLGTH)
+404200               RIDFLD(SCHEDKEY1)
+404300               KEYLENGTH(SCHEDKEY1-KLGTH)
+404400               RESP(WS-RESPONSE)
+404500     END-EXEC
+404600     MOVE WS-RESPONSE            TO FILE-STATUS
+404700     IF NOT (SUCCESS OR NO-RECORD-FND OR END-OF-FILE)
+404800        MOVE 'P8020-1'           TO ERR-PARAGRAPH
+404900        MOVE SCHEDKEY1           TO ERR-KEY
+405000        PERFORM P9999-GOT-PROBLEM
+405100     END-IF.
+405200*
+405300 P8025-READ-SCHED.
+405400*
+405500     EXEC CICS READ
+405600               DATASET(SJ-VIA-SCHEDKEY1)
+405700               INTO(WS-SCHED)
+405800               LENGTH(SCHEDKEY1-RLGTH)
+405900               RIDFLD(SCHEDKEY1)
+406000               KEYLENGTH(SCHEDKEY1-KLGTH)
+406100               RESP(WS-RESPONSE)
+406200     END-EXEC
+406300     MOVE WS-RESPONSE            TO FILE-STATUS
+406400     IF NOT SUCCESS
+406500        MOVE 'P8025-1'           TO ERR-PARAGRAPH
+406600        MOVE SCHEDKEY1           TO ERR-KEY
+406700        PERFORM P9999-GOT-PROBLEM
+406800     END-IF.
+406900*
+407000 P8030-ENDBR-SCHED.
+407100*
+407200     EXEC CICS ENDBR
+407300               DATASET(SJ-VIA-SCHEDKEY1)
+407400               RESP(WS-RESPONSE)
+407500     END-EXEC
+407600     MOVE WS-RESPONSE            TO FILE-STATUS.
+407700*
+407800 P8040-GET-CREW-PROFILE-REC.
+407900*
+408000     MOVE SPACES          TO WORK-CNTLKEY
+408100     MOVE '3A'            TO WK-CNTL-REC-TYPE
+408200     MOVE SCR15X-DIST     TO WK-CNTL-DIST
+408300     MOVE SCR15X-SUB-DIST TO WK-CNTL-SUB-DIST
+408400     MOVE SCR15X-POOL     TO WK-CNTL-POOL
+408500     MOVE 'F'             TO WK-CNTL-POOL-TYPE
+408510     MOVE WORK-CNTLKEY    TO CNTLKEY
+408520     EXEC CICS READ
+408530               DATASET(CNTL-FILE-VIA-CNTLKEY)
+408540               INTO(WS-CNTL-FILE)
+408550               LENGTH(CNTLFILE-RLGTH)
+408560               RIDFLD(CNTLKEY)
+408570               KEYLENGTH(CNTLFILE-KLGTH)
+408580               RESP(WS-RESPONSE)
+408590     END-EXEC
+408591     MOVE WS-RESPONSE TO FILE-STATUS
+408592     IF NOT SUCCESS
+408593        MOVE 'P8040-1' TO ERR-PARAGRAPH
+408594        MOVE MSTRNBRK  TO ERR-KEY
+408595        PERFORM P9999-GOT-PROBLEM
+408596     END-IF.
+408597*
+408598*================================
+408599 P8100-STARTBR-UFPPOS.
+408600*================================
+408601*
+408602     EXEC CICS STARTBR
+408603               DATASET(UFP-VIA-POSITION)
+408604               RIDFLD(UFPPOS)
+408605               GTEQ
+408606               RESP(WS-RESPONSE)
+408607     END-EXEC
+408608     MOVE WS-RESPONSE               TO FILE-STATUS
+408609     .
+408610*
+408620*================================
+408630 P8110-READNEXT-UFPPOS.
+408640*================================
+408650*
+408660     EXEC CICS READNEXT
+408670               DATASET(UFP-VIA-POSITION)
+408680               INTO(WS-UFP)
+408690               LENGTH(UFPPOS-RLGTH)
+408700               RIDFLD(UFPPOS)
+408800               KEYLENGTH(UFPPOS-KLGTH)
+408900               RESP(WS-RESPONSE)
+409000     END-EXEC
+409100     MOVE WS-RESPONSE               TO FILE-STATUS
+409200     .
+409300*
+409400*================================
+409500 P8120-ENDBR-UFPPOS.
+409600*================================
+409700*
+409800     EXEC CICS ENDBR
+409900               DATASET(UFP-VIA-POSITION)
+410000               RESP(WS-RESPONSE)
+410100     END-EXEC
+410200     .
+410300*
+410400*=================================================================
+410500 P8400-LOAD-CALL-ORDER-ARRAY.
+410600*=================================================================
+410700*CNC0564A - BEG
+410800     IF WS-3A-BIDPK-TIEBRK-PW-BRD
+410900        ADD 1                    TO S1
+411000        IF S1 <= COT-ARRAY-MAX
+411100           MOVE CRAFT-ARRAY-SUB  TO S2
+411200***  DO NOT ADD TO ARRAY IF THE SAME TURN IS CURRENTLY SCHEDULED
+411300***  TO PROTECT AT GIVEN TIME.
+411400           IF  DISPLAY-TURN-RD-RED
+411500           AND S1 > 1
+411600              SET DUP-TURN-NOT-DONE TO TRUE
+411700*
+411800*          'S6' INDEXES THE PREVIOUS ARRAY ENTRY THAT WE'RE
+411900*               COMPARING AGAINST.
+412000*
+412100              MOVE S1            TO S6
+412200              PERFORM UNTIL DUP-TURN-DONE
+412300                         OR S6 = 1
+412400                 SUBTRACT 1    FROM S6
+412500                 IF (SCHED1-ASSIGNMENT =
+412600                     WS-COT-SCHEDKEY1(S2, S6)(5:8))
+412700                 AND WS-TURN-PROTECTED(S2, S6)
+412710                    SUBTRACT 1 FROM S1
+412720                    SET DONT-DISPLAY-TURN TO TRUE
+412730                    SET DUP-TURN-DONE     TO TRUE
+412740                 END-IF
+412741              END-PERFORM
+412742           END-IF
+412743*
+412744           IF DISPLAY-TURN
+412745           OR DISPLAY-TURN-RD-RED
+412746              MOVE SCHED1-START-DATE-TIME
+412747                                 TO WS-COT-START-DATE-TIME(S2, S1)
+412748              MOVE SCHED1-CALL-ORDER TO WS-COT-CALL-ORDER(S2, S1)
+412749
+412750              MOVE SCHED-END-DATE-TIME TO WS-PREV-SCHED-END-DTTM
+412760                                      WS-COT-END-DATE-TIME(S2, S1)
+412770              MOVE SCHED1-ASSIGNMENT TO WS-PREV-SCHED-ASGN
+412771                                          WS-COT-ASGN(S2,S1)
+412772              SET DE-YYMMDD-FORMAT TO TRUE
+412773              SET DE-REFORMAT-ONLY TO TRUE
+412774              MOVE UFP-POS-DATE-TIME(1:6) TO DE-YYMMDD
+412775              PERFORM P8998-DATEEDIT
+412776              IF DE-INVALID-DATE
+412777                 MOVE 'P8400-1'   TO ERR-PARAGRAPH
+412778                 MOVE UFP-POS-DATE-TIME TO ERR-KEY
+412779                 MOVE SCHED-KEY1  TO ERR-SENTENCE
+412780                 PERFORM P9999-GOT-PROBLEM
+412790              END-IF
+412791              MOVE DE-YYMMDD-CE   TO WS-COT-BOARD-CENT(S2, S1)
+412792              MOVE UFP-POS-DATE-TIME
+412793                                 TO WS-COT-BOARD-DATE-TIME(S2, S1)
+412794              MOVE UFP-POS-TIE-BREAKER TO WS-COT-BOARD-TIE(S2, S1)
+412795              MOVE SCHED-KEY1     TO WS-COT-SCHEDKEY1(S2, S1)
+412796              IF DISPLAY-TURN-RD-RED
+412797                 SET WS-TURN-PROTECTED-NO(S2, S1) TO TRUE
+412798              END-IF
+412799*
+412800*       SORT THE ARRAY ENTRY WE JUST CREATED WITH EXISTING ENTRIES
+412801*       BASED ON BOARD DATE-TIME.
+412802*
+412803              IF S1 > 1
+412804                 SET SORT-NOT-DONE TO TRUE
+412805*
+412806*               'S4' INDEXES THE NEW ARRAY ENTRY WE'RE SORTING IN.
+412807*               'S3' INDEXES THE PREVIOUS ARRAY ENTRY THAT WE'RE
+412808*                    COMPARING AGAINST.
+412809*
+412810                 MOVE S1         TO S3
+412811                                       S4
+412812                 PERFORM UNTIL SORT-DONE
+412813                            OR S3 = 1
+412814                    SUBTRACT 1 FROM S3
+412815                    IF WS-COT-BOARD-DATE-TIME-TIE(S2, S4) <
+412816                       WS-COT-BOARD-DATE-TIME-TIE(S2, S3)
+412817                       MOVE WS-CO-TURN-ARRAY(S2, S3)
+412818                                       TO WS-CALL-ORDER-SAVE-AREA
+412819                       MOVE WS-CO-TURN-ARRAY(S2, S4)
+412820                                       TO WS-CO-TURN-ARRAY(S2, S3)
+412821                       MOVE WS-CALL-ORDER-SAVE-AREA
+412822                                       TO WS-CO-TURN-ARRAY(S2, S4)
+412823                       SUBTRACT 1 FROM S4
+412824                    ELSE
+412825                       SET SORT-DONE TO TRUE
+412826                    END-IF
+412827                 END-PERFORM
+412828              END-IF
+412829           END-IF
+412830        END-IF
+412831     ELSE
+412832        ADD 1                    TO S1
+412833        IF S1 <= COT-ARRAY-MAX
+412834           MOVE CRAFT-ARRAY-SUB  TO S2
+412835           MOVE SCHED1-START-DATE-TIME
+412836                                 TO WS-COT-START-DATE-TIME(S2, S1)
+412837           MOVE SCHED1-CALL-ORDER TO WS-COT-CALL-ORDER(S2, S1)
+412838
+412839*CNC0510    - SAVE START DTTM AND END DTTM FOR LATER USE
+412840           MOVE SCHED-END-DATE-TIME TO WS-PREV-SCHED-END-DTTM
+412841                                      WS-COT-END-DATE-TIME(S2, S1)
+412842           MOVE SCHED1-ASSIGNMENT TO WS-PREV-SCHED-ASGN
+412843                                       WS-COT-ASGN(S2,S1)
+412844*CNC0510-END
+412845
+412846           SET DE-YYMMDD-FORMAT     TO TRUE
+412847           SET DE-REFORMAT-ONLY     TO TRUE
+412848           MOVE UFP-POS-DATE-TIME(1:6) TO DE-YYMMDD
+412849           PERFORM P8998-DATEEDIT
+412850           IF DE-INVALID-DATE
+412851              MOVE 'P8400-1'        TO ERR-PARAGRAPH
+412852              MOVE UFP-POS-DATE-TIME TO ERR-KEY
+412853              MOVE SCHED-KEY1       TO ERR-SENTENCE
+412854              PERFORM P9999-GOT-PROBLEM
+412855           END-IF
+412856           MOVE DE-YYMMDD-CE     TO WS-COT-BOARD-CENT(S2, S1)
+412857
+412858          MOVE UFP-POS-DATE-TIME TO WS-COT-BOARD-DATE-TIME(S2, S1)
+412859           MOVE UFP-POS-TIE-BREAKER TO WS-COT-BOARD-TIE(S2, S1)
+412860           MOVE SCHED-KEY1       TO WS-COT-SCHEDKEY1(S2, S1)
+412861*
+412862*       SORT THE ARRAY ENTRY WE JUST CREATED WITH EXISTING ENTRIES
+412863*          BASED ON START DATE-TIME/CALL ORDER/BOARD DATE-TIME
+412864*
+412865           IF S1 > 1
+412866              SET SORT-NOT-DONE  TO TRUE
+412867*
+412868*             'S4' INDEXES THE NEW ARRAY ENTRY WE'RE SORTING IN.
+412869*             'S3' INDEXES THE PREVIOUS ARRAY ENTRY THAT WE'RE
+412870*                  COMPARING AGAINST.
+412871*
+412872              MOVE S1            TO S3
+412873                                       S4
+412874              PERFORM UNTIL SORT-DONE
+412875                         OR S3 = 1
+412876                 SUBTRACT 1    FROM S3
+412877                 IF WS-COT-KEY(S2, S4) < WS-COT-KEY(S2, S3)
+412878                    MOVE WS-CO-TURN-ARRAY(S2, S3)
+412879                                    TO WS-CALL-ORDER-SAVE-AREA
+412880                    MOVE WS-CO-TURN-ARRAY(S2, S4)
+412881                                    TO WS-CO-TURN-ARRAY(S2, S3)
+412882                    MOVE WS-CALL-ORDER-SAVE-AREA
+412883                                    TO WS-CO-TURN-ARRAY(S2, S4)
+412884                    SUBTRACT 1 FROM S4
+412885                 ELSE
+412886                    SET SORT-DONE TO TRUE
+412887                 END-IF
+412888              END-PERFORM
+412889           END-IF
+412890        END-IF
+412891     END-IF
+412892*CNC0564A - END
+412893     .
+412894*
+412895 P8500-READ-MASTER.
+412896*
+412897     EXEC CICS READ
+412898               DATASET(MSTR-VIA-EMP-NBR)
+412899               INTO(WS-MSTR)
+412900               LENGTH(MSTRENBR-RLGTH)
+413000               RIDFLD(MSTRNBRK)
+413100               KEYLENGTH(MSTRENBR-KLGTH)
+413200               RESP(WS-RESPONSE)
+413300     END-EXEC
+413400     MOVE WS-RESPONSE TO FILE-STATUS
+413500     IF NOT SUCCESS
+413600        MOVE 'P8500-1' TO ERR-PARAGRAPH
+413700        MOVE MSTRNBRK  TO ERR-KEY
+413800        PERFORM P9999-GOT-PROBLEM
+413900     END-IF
+414000     PERFORM P8510-READ-MASTER-JOBS
+414100     IF DIST       OF WS-MSTR NOT = PSTCA-DIST
+414200     OR SUB-DIST   OF WS-MSTR NOT = PSTCA-SUB-DIST
+414300        MOVE SPACES              TO WORK-CNTLKEY
+414400        MOVE '02'                TO WK-CNTL-REC-TYPE
+414500        MOVE DIST     OF WS-MSTR TO WK-CNTL-DIST
+414600        MOVE SUB-DIST OF WS-MSTR TO WK-CNTL-SUB-DIST
+414700        MOVE WORK-CNTLKEY        TO CNTLKEY
+414800        EXEC CICS READ
+414900                  DATASET(CNTL-FILE-VIA-CNTLKEY)
+415000                  INTO(WS-CNTL-FILE)
+415100                  LENGTH(CNTLFILE-RLGTH)
+415200                  RIDFLD(CNTLKEY)
+415300                  KEYLENGTH(CNTLFILE-KLGTH)
+415400                  RESP(WS-RESPONSE)
+415500        END-EXEC
+415600        MOVE WS-RESPONSE TO FILE-STATUS
+415700        IF NOT SUCCESS
+415800           MOVE 'P8500-2' TO ERR-PARAGRAPH
+415900           MOVE CNTLKEY   TO ERR-KEY
+416000           PERFORM P9999-GOT-PROBLEM
+416100        END-IF
+416200        IF EMP-MTOD       > '0000000000'
+416300            MOVE SPACES            TO TZ-PARAMETERS
+416400            MOVE EMP-MTOD-NUM      TO TZ-IN-DATE-TIME
+416500            MOVE CNTL-TIME-ZONE    TO TZ-IN-ZONE
+416600            MOVE PSTCA-TIME-ZONE   TO TZ-OUT-ZONE
+416700            PERFORM P8996-TIMEZONE
+416800            MOVE TZ-OUT-DATE-TIME  TO EMP-MTOD
+416900        END-IF
+417000*CNLD-309 B   COMMENTING
+417000*       IF EMP-MTOY       > '0000000000'
+417100*           MOVE SPACES            TO TZ-PARAMETERS
+417200*           MOVE EMP-MTOY-NUM      TO TZ-IN-DATE-TIME
+417300*           MOVE CNTL-TIME-ZONE    TO TZ-IN-ZONE
+417400*           MOVE PSTCA-TIME-ZONE   TO TZ-OUT-ZONE
+417500*           PERFORM P8996-TIMEZONE
+417600*           MOVE TZ-OUT-DATE-TIME  TO EMP-MTOY
+417700*       END-IF
+417800*       IF EMP-MTOR       > '0000000000'
+417900*           MOVE SPACES            TO TZ-PARAMETERS
+418000*           MOVE EMP-MTOR-NUM      TO TZ-IN-DATE-TIME
+418100*           MOVE CNTL-TIME-ZONE    TO TZ-IN-ZONE
+418200*           MOVE PSTCA-TIME-ZONE   TO TZ-OUT-ZONE
+418300*           PERFORM P8996-TIMEZONE
+418400*           MOVE TZ-OUT-DATE-TIME  TO EMP-MTOR
+418500*       END-IF
+417000*CNLD-309 E
+418600        IF EMP-US-RSTD    > '0000000000'
+418700            MOVE SPACES            TO TZ-PARAMETERS
+418800            MOVE EMP-US-RSTD-NUM   TO TZ-IN-DATE-TIME
+418900            MOVE CNTL-TIME-ZONE    TO TZ-IN-ZONE
+419000            MOVE PSTCA-TIME-ZONE   TO TZ-OUT-ZONE
+419100            PERFORM P8996-TIMEZONE
+419200            MOVE TZ-OUT-DATE-TIME  TO EMP-US-RSTD
+419300        END-IF
+419400        IF EMP-PERS-REST  > '0000000000'
+419500            MOVE SPACES            TO TZ-PARAMETERS
+419600            MOVE EMP-PERS-REST-NUM TO TZ-IN-DATE-TIME
+419700            MOVE CNTL-TIME-ZONE    TO TZ-IN-ZONE
+419800            MOVE PSTCA-TIME-ZONE   TO TZ-OUT-ZONE
+419900            PERFORM P8996-TIMEZONE
+420000            MOVE TZ-OUT-DATE-TIME  TO EMP-PERS-REST
+420100        END-IF
+420200     END-IF.
+420300*
+420400 P8510-READ-MASTER-JOBS.
+420500*
+420600     MOVE SPACES                 TO WS-ASGN-FILE
+420700                                    NORMAL-ASGNMT-FLAG
+420800                                    NORMAL-ASGNMT
+420900                                    TEMPORARY-ASGNMT-FLAG
+421000                                    TEMPORARY-ASGNMT
+421100                                    ON-DUTY-ASGNMT-FLAG
+421200                                    ON-DUTY-ASGNMT
+421300     MOVE EMP-NBR OF WS-MSTR     TO ASGN-EMP-NO
+421400     PERFORM PXXXX-JOB-OWNED
+421500     MOVE ASGN-JOB-TYPE          TO NORMAL-ASGNMT-FLAG
+421600     MOVE ASGN-ASSIGNMENT        TO NORMAL-ASGNMT
+421700     MOVE SPACES                 TO WS-ASGN-FILE
+421800     MOVE EMP-NBR OF WS-MSTR     TO ASGN-EMP-NO
+421900     PERFORM PXXXX-LATEST-TEMP-JOB
+422000     MOVE ASGN-JOB-TYPE          TO TEMPORARY-ASGNMT-FLAG
+422100     MOVE ASGN-ASSIGNMENT        TO TEMPORARY-ASGNMT
+422200     MOVE SPACE                  TO WS-ASGN-FILE
+422300     MOVE EMP-NBR OF WS-MSTR     TO ASGN-EMP-NO
+422400     PERFORM PXXXX-JOB-ON-DUTY
+422500     MOVE ASGN-JOB-TYPE          TO ON-DUTY-ASGNMT-FLAG
+422600     MOVE ASGN-ASSIGNMENT        TO ON-DUTY-ASGNMT
+422700     MOVE ASGN-ON-DUTY-DATE-TIME TO ON-DUTY-OUT-TOWN-CODE.
+422800*
+422900 P8520-READ-MASTER-UPDATE.
+423000*
+423100     EXEC CICS READ
+423200               UPDATE
+423300               DATASET(MSTR-VIA-EMP-NBR)
+423400               INTO(WS-MSTR)
+423500               LENGTH(MSTRENBR-RLGTH)
+423600               RIDFLD(MSTRNBRK)
+423700               KEYLENGTH(MSTRENBR-KLGTH)
+423800               RESP(WS-RESPONSE)
+423900     END-EXEC
+424000     MOVE WS-RESPONSE TO FILE-STATUS.
+424100*
+424200 P8550-REWRITE-MASTER.
+424300*
+424400     EXEC CICS REWRITE
+424500               DATASET(MSTR-VIA-EMP-NBR)
+424600               FROM(WS-MSTR)
+424700               LENGTH(MSTRENBR-RLGTH)
+424800               RESP(WS-RESPONSE)
+424900     END-EXEC
+425000     MOVE WS-RESPONSE TO FILE-STATUS
+425100     IF NOT SUCCESS
+425200        MOVE 'P8550'  TO ERR-PARAGRAPH
+425300        MOVE MSTRNBRK TO ERR-KEY
+425400        PERFORM P9999-GOT-PROBLEM
+425500     END-IF.
+425600*
+433800*CNC0600-B
+433900*************************************************************
+434000 P8560-READ-MSTR3-READ.
+434100*************************************************************
+434200*
+434300     EXEC CICS READ
+434400               DATASET(MSTR3-VIA-EMP-NBR)
+434500               INTO(WS-MSTR3)
+434600               LENGTH(MSTR3ENBR-RLGTH)
+434700               RIDFLD(MSTR3NBRK)
+434800               KEYLENGTH(MSTR3ENBR-KLGTH)
+434900               RESP(WS-RESPONSE)
+435000     END-EXEC
+435100     MOVE WS-RESPONSE TO FILE-STATUS.
+435200*
+435300*CNC0600-E
+425700 P8600-READ-UFPTURN.
+425800*
+425900     EXEC CICS READ
+426000               DATASET(UFP-VIA-TURN-NBR)
+426100               INTO(WS-UFP)
+426200               LENGTH(UFPTURN-RLGTH)
+426300               RIDFLD(UFPTURN)
+426400               KEYLENGTH(UFPTURN-KLGTH)
+426500               RESP(WS-RESPONSE)
+426600     END-EXEC
+426700     MOVE WS-RESPONSE TO FILE-STATUS.
+426800*
+426900 P8610-READ-UFPTURN-UPDATE.
+427000*
+427100     EXEC CICS READ
+427200               UPDATE
+427300               DATASET(UFP-VIA-TURN-NBR)
+427400               INTO(WS-UFP)
+427500               LENGTH(UFPTURN-RLGTH)
+427600               RIDFLD(UFPTURN)
+427700               KEYLENGTH(UFPTURN-KLGTH)
+427800               RESP(WS-RESPONSE)
+427900     END-EXEC
+428000     MOVE WS-RESPONSE TO FILE-STATUS.
+428100*
+428200 P8620-WRITE-UFPTURN.
+428300*
+428400     MOVE UFPTURN-AREA TO UFPTURN
+428500     EXEC CICS WRITE
+428600               DATASET(UFP-VIA-TURN-NBR)
+428700               FROM(WS-UFP)
+428800               LENGTH(UFPTURN-RLGTH)
+428900               RIDFLD(UFPTURN)
+429000               RESP(WS-RESPONSE)
+429100     END-EXEC
+429200     MOVE WS-RESPONSE TO FILE-STATUS
+429300     IF NOT SUCCESS
+429400        MOVE 'P2600'      TO ERR-PARAGRAPH
+429500        MOVE UFPTURN-AREA TO ERR-KEY
+429600        PERFORM P9999-GOT-PROBLEM
+429700     END-IF.
+429800*
+429900 P8630-REWRITE-UFPTURN.
+430000*
+430100     EXEC CICS REWRITE
+430200               DATASET(UFP-VIA-TURN-NBR)
+430300               FROM(WS-UFP)
+430400               LENGTH(UFPTURN-RLGTH)
+430500               RESP(WS-RESPONSE)
+430600     END-EXEC
+430700     MOVE WS-RESPONSE TO FILE-STATUS
+430800     IF NOT SUCCESS
+430900        MOVE 'P8630'      TO ERR-PARAGRAPH
+431000        MOVE UFPTURN-AREA TO ERR-KEY
+431100        PERFORM P9999-GOT-PROBLEM
+431200     END-IF.
+431300     IF UFP-POS-DATE-TIME(1:2) < '90' AND
+431400        UFP-POS-DATE-TIME(3:2) > '00' AND
+431500        OK-TO-ZAP
+431600        MOVE SPACES                    TO P916-COMMAREA-PARMS
+431700        SET P916-ZAP-FUNCTION          TO TRUE
+431800        MOVE DIST OF UFPPOS-AREA       TO P916-TURN-DIST
+431900        MOVE SUB-DIST OF UFPPOS-AREA   TO P916-TURN-SUB-DIST
+432000        MOVE POOL-NAME OF UFPPOS-AREA  TO P916-TURN-POOL
+432100        EXEC CICS LINK
+432200             PROGRAM(P916-PGM)
+432300             COMMAREA(P916-COMMAREA-PARMS)
+432400             LENGTH(P916-LGTH)
+432500             RESP(WS-RESPONSE)
+432600        END-EXEC
+432700        MOVE WS-RESPONSE TO FILE-STATUS
+432800        IF NOT SUCCESS
+432900           MOVE 'P8630-2' TO ERR-PARAGRAPH
+433000           PERFORM P9999-GOT-PROBLEM
+433100        END-IF
+433200        MOVE SPACE        TO WS-ZAP-FLAG
+433300     END-IF.
+433400*MFO 6/9/16 - BEG
+433500*
+433600 P8640-READNXT-UFPTURN.
+433700*
+433800     EXEC CICS READ
+433900               GTEQ
+433910               DATASET(UFP-VIA-TURN-NBR)
+433911               INTO(WS-UFP)
+433912               LENGTH(UFPTURN-RLGTH)
+433913               RIDFLD(UFPTURN)
+433914               KEYLENGTH(UFPTURN-KLGTH)
+433915               RESP(WS-RESPONSE)
+433916     END-EXEC
+433917     MOVE WS-RESPONSE TO FILE-STATUS.
+433918*MFO 6/9/16 - END
+433919*
+433920 P8700-READ-SCHEDKEY2.
+433921*
+433922     EXEC CICS READ
+433923               DATASET(SJ-VIA-SCHEDKEY2)
+433924               INTO(WS-SCHED)
+433925               LENGTH(SCHEDKEY2-RLGTH)
+433926               RIDFLD(SCHEDKEY2)
+433927               KEYLENGTH(SCHEDKEY2-KLGTH)
+433928               RESP(WS-RESPONSE)
+433929     END-EXEC
+433930     MOVE WS-RESPONSE TO FILE-STATUS
+433940     IF NOT (SUCCESS OR NO-RECORD-FND)
+433950        MOVE 'P8700-1'               TO ERR-PARAGRAPH
+433960        MOVE SCHEDKEY2               TO ERR-KEY
+433970        PERFORM P9999-GOT-PROBLEM
+433980     END-IF.
+433990
+434000*
+434100 P8710-STARTBR-SCHEDKEY2.
+434200*
+434300     EXEC CICS STARTBR
+434400               DATASET(SJ-VIA-SCHEDKEY2)
+434500               RIDFLD(SCHEDKEY2)
+434600               GTEQ
+434700               RESP(WS-RESPONSE)
+434800     END-EXEC
+434900     MOVE WS-RESPONSE TO FILE-STATUS
+435000     IF NOT (SUCCESS OR NO-RECORD-FND OR END-OF-FILE)
+435100        MOVE 'P8710-1'               TO ERR-PARAGRAPH
+435200        MOVE SCHEDKEY2               TO ERR-KEY
+435300        PERFORM P9999-GOT-PROBLEM
+435400     END-IF.
+435500*
+435600 P8720-READNEXT-SCHEDKEY2.
+435700*
+435800     EXEC CICS READNEXT
+435900               DATASET(SJ-VIA-SCHEDKEY2)
+436000               INTO(WS-SCHED)
+436100               LENGTH(SCHEDKEY2-RLGTH)
+436200               RIDFLD(SCHEDKEY2)
+436300               KEYLENGTH(SCHEDKEY2-KLGTH)
+436400               RESP(WS-RESPONSE)
+436500     END-EXEC
+436600     MOVE WS-RESPONSE TO FILE-STATUS.
+436700     IF NOT (SUCCESS OR NO-RECORD-FND OR END-OF-FILE)
+436800        MOVE 'P8720-1'               TO ERR-PARAGRAPH
+436900        MOVE SCHEDKEY2               TO ERR-KEY
+437000        PERFORM P9999-GOT-PROBLEM
+437100     END-IF.
+437200*
+437300 P8730-ENDBR-SCHEDKEY2.
+437400*
+437500     EXEC CICS ENDBR
+437600               DATASET(SJ-VIA-SCHEDKEY2)
+437700               RESP(WS-RESPONSE)
+437800     END-EXEC
+437900     MOVE WS-RESPONSE TO FILE-STATUS.
+438000*
+438100 P8800-GET-CURRENT-TIME.
+438200*
+438300     EXEC CICS ASKTIME
+438400               ABSTIME(WS-ABSTIME)
+438500     END-EXEC
+438600     ADD WS-ABSTIME-OFFSET  TO WS-ABSTIME
+438700     EXEC CICS FORMATTIME
+438800               ABSTIME(WS-ABSTIME)
+438900               YYYYMMDD(WS-SYSTEM-DATE-CENT)
+439000               TIME(WS-SYSTEM-TIME-AREA)
+439100     END-EXEC
+439200*
+439300*    INSTALL APPLICATION DATE/TIME
+439400*
+439500     IF PSTCA-DATE-TIME-OFFSET > SPACES
+439600        MOVE ZEROS          TO DATE-CONVERSION-PARMS
+439700        MOVE WS-SYSTEM-DATE TO PARM-PRI-DATE-GREG
+439800        MOVE WS-SYSTEM-TIME TO PARM-PRI-HRMN
+439900        PERFORM P9810-PROCESS-OFFSET
+440000        MOVE PARM-RES-DATE-GREG
+440100                            TO WS-SYSTEM-DATE
+440200        MOVE PARM-RES-GREG-CENT
+440300                            TO WS-SYSTEM-CENT
+440400        MOVE PARM-RES-HRMN
+440500                            TO WS-SYSTEM-TIME
+440600     END-IF
+440700*
+440800     MOVE SPACES            TO TZ-PARAMETERS
+440900     SET TZ-IN-EASTERN-ZONE TO TRUE
+441000     MOVE WS-PRESENT-TIME   TO TZ-IN-DATE-TIME
+441100     MOVE PSTCA-TIME-ZONE   TO TZ-OUT-ZONE
+441200                               WS-TIME-ZONE
+441300     PERFORM P8996-TIMEZONE
+441400*    MOVE TZ-OUT-DATE-TIME      TO WS-LOCAL-DATE-TIME.
+096700*CNC0600-B
+441500     MOVE TZ-OUT-DATE-TIME-CENT TO WS-LOCAL-DATE-TIME-CENT
+096800     MOVE WS-LOCAL-DATE-TIME-CENT TO WS-LOCAL-CURRENT-DTTM-CENT
+           MOVE WS-LOCAL-CURRENT-DATE-YYMMDD TO WS-LOCAL-CUR-DATE-YYMMDD
+           MOVE WS-LOCAL-CURRENT-TIME        TO WS-LOCAL-CUR-TIME-HHMM
+           .
+097000*CNC0600-E
+441600*
+441700 P8900-WRITE-HISTORY.
+441800*
+441900     SET P943-EMPLOYEE-FUNCTION TO TRUE
+442000     MOVE WORK-HIST-TIME        TO P943-CLOCK-TIME
+442100     IF P943-EFF-DATE-TIME NOT > SPACES
+442200        MOVE WS-LOCAL-DATE-TIME TO P943-EFF-DATE-TIME
+442300     END-IF
+442400     MOVE WORK-HIST-TIMEX       TO P943-CLOCK-TIME
+442500
+442600     EXEC CICS ASSIGN
+442700               USERID(P943-USERID)
+442800     END-EXEC
+442900
+443000     EXEC CICS LINK
+443100               PROGRAM(P943-PGM)
+443200               COMMAREA(P943-COMMAREA-PARMS)
+443300               LENGTH(P943-LGTH)
+443400               RESP(WS-RESPONSE)
+443500     END-EXEC
+443600
+443700     MOVE WS-RESPONSE           TO FILE-STATUS
+443800     IF NOT SUCCESS
+443900        MOVE 'P8900'            TO ERR-PARAGRAPH
+444000        MOVE 'P943'             TO ERR-KEY
+444100        PERFORM P9999-GOT-PROBLEM
+444200     END-IF.
+444300*
+444400 P8900-Y2KDATE.
+444500     SET DE-YYMMDD-FORMAT     TO TRUE
+444600     MOVE EMP-MTOD-DATE       TO DE-YYMMDD
+444700     PERFORM P8998-DATEEDIT
+444800     MOVE DE-CCYYMMDD         TO DE-COMPARE1-DATE
+444900     MOVE EMP-MTOD-TIME       TO DE-COMPARE1-TIME
+445000
+445100     MOVE ZEROS               TO DE-COMPARE2-DATE-TIME
+445200
+445300     SET DE-YYMMDD-FORMAT     TO TRUE
+445400     MOVE EMP-US-RSTD-DATE    TO DE-YYMMDD
+445500     PERFORM P8998-DATEEDIT
+445600     MOVE DE-CCYYMMDD         TO DE-COMPARE2-DATE
+445700     MOVE EMP-US-RSTD-TIME    TO DE-COMPARE2-TIME
+445800     SET DE-YYMMDD-FORMAT     TO TRUE
+445900     MOVE EMP-PERS-REST-DATE  TO DE-YYMMDD
+446000     PERFORM P8998-DATEEDIT
+446100     MOVE DE-CCYYMMDD         TO DE-COMPARE3-DATE
+446200     MOVE EMP-PERS-REST-TIME  TO DE-COMPARE3-TIME.
+446300*
+446400 PXXXX-GET-UFP-EMPS.
+446500*
+446600     MOVE ZEROES TO FIRST-EMP-NBR
+446700                    TEMP-EMP-ONE
+446800                    ON-DUTY-EMP
+446900     MOVE SPACES TO WS-ASGN-FILE
+447000     SET ASGN-UFP-JOB TO TRUE
+447100     MOVE DIST2 TO ASGN-DIST
+447200     MOVE SUB-DIST2 TO ASGN-SUB-DIST
+447300     MOVE POOL-NAME2 TO ASGN-UFP-POOL
+447400     MOVE TURN-NBR OF WS-UFP TO ASGN-UFP-TURN
+447500     MOVE POOL-CRAFT-CODE2 TO ASGN-UFP-CC
+447600     PERFORM PXXXX-JOB-OWNER
+447700     IF ASGN-EMP-NO > ZERO
+447800        MOVE ASGN-EMP-NO TO FIRST-EMP-NBR
+447900     END-IF
+448000     MOVE SPACES TO WS-ASGN-FILE
+448100     SET ASGN-UFP-JOB TO TRUE
+448200     MOVE DIST2 TO ASGN-DIST
+448300     MOVE SUB-DIST2 TO ASGN-SUB-DIST
+448400     MOVE POOL-NAME2 TO ASGN-UFP-POOL
+448500     MOVE TURN-NBR OF WS-UFP TO ASGN-UFP-TURN
+448600     MOVE POOL-CRAFT-CODE2 TO ASGN-UFP-CC
+448700     PERFORM PXXXX-LATEST-TEMP
+448800     IF ASGN-EMP-NO > ZERO
+448900        MOVE ASGN-EMP-NO TO TEMP-EMP-ONE
+449000     END-IF
+449100     MOVE SPACES TO WS-ASGN-FILE
+449200     SET ASGN-UFP-JOB TO TRUE
+449300     MOVE DIST2 TO ASGN-DIST
+449400     MOVE SUB-DIST2 TO ASGN-SUB-DIST
+449500     MOVE POOL-NAME2 TO ASGN-UFP-POOL
+449600     MOVE TURN-NBR OF WS-UFP TO ASGN-UFP-TURN
+449700     MOVE POOL-CRAFT-CODE2 TO ASGN-UFP-CC
+449800     PERFORM PXXXX-ON-DUTY-EMP
+449900     IF ASGN-EMP-NO > ZERO
+450000        MOVE ASGN-EMP-NO TO ON-DUTY-EMP
+450100     END-IF.
+450200*
+450300 PXXXX-JOB-OWNER.
+450400*
+450500     SET ASGN-OWNER-REC TO TRUE
+450600     MOVE ZERO          TO ASGN-DATE-TIME
+450700     MOVE ASGNKEY1      TO ASGNJOB
+450800     EXEC CICS READ
+450900               DATASET(ASGN-VIA-ASGNJOB)
+451000               INTO(ASGN-AREA)
+451100               LENGTH(ASGNJOB-RLGTH)
+451200               RIDFLD(ASGNJOB)
+451300               KEYLENGTH(ASGNJOB-KLGTH)
+451400               RESP(WS-RESPONSE)
+451500     END-EXEC
+451600     MOVE WS-RESPONSE TO FILE-STATUS
+451700     IF NOT SUCCESS
+451800        MOVE ZEROS TO ASGN-EMP-NO
+451900     END-IF.
+452000*
+452100 PXXXX-LATEST-TEMP.
+452200*
+452300     MOVE SPACES        TO WS-SAVE-ASGN-FILE
+452400     SET ASGN-TEMP-REC  TO TRUE
+452500     MOVE ZERO          TO ASGN-DATE-TIME
+452600     MOVE ASGNKEY1      TO ASGNJOB
+452700     MOVE WS-ASGN-FILE  TO WS-SAVE-ASGN-FILE
+452800     EXEC CICS STARTBR
+452900               DATASET(ASGN-VIA-ASGNJOB)
+453000               RIDFLD(ASGNJOB)
+453100               GTEQ
+453200               RESP(WS-RESPONSE)
+453300     END-EXEC
+453400     MOVE WS-RESPONSE TO FILE-STATUS
+453500     IF SUCCESS
+453600        MOVE '0' TO ASGN-DONE-CODE
+453700        PERFORM UNTIL ASGN-DONE
+453800           EXEC CICS READNEXT
+453900                     DATASET(ASGN-VIA-ASGNJOB)
+454000                     INTO(ASGN-AREA)
+454100                     LENGTH(ASGNJOB-RLGTH)
+454200                     RIDFLD(ASGNJOB)
+454300                     KEYLENGTH(ASGNJOB-KLGTH)
+454400                     RESP(WS-RESPONSE)
+454500           END-EXEC
+454600           MOVE WS-RESPONSE TO FILE-STATUS
+454700           IF SUCCESS
+454800              IF WK-ASGN-DIST = ASGN-DIST
+454900                 AND WK-ASGN-SUB-DIST = ASGN-SUB-DIST
+455000                 AND WK-ASGN-ASGN = ASGN-AJ-JOB OF ASGN-ASSIGNMENT
+455100                 AND ASGN-TEMP-REC
+455200                 MOVE ASGN-AREA TO WS-SAVE-ASGN-FILE
+455300              ELSE
+455400                 SET ASGN-DONE TO TRUE
+455500              END-IF
+455600           ELSE
+455700              SET ASGN-DONE TO TRUE
+455800           END-IF
+455900        END-PERFORM
+456000        EXEC CICS ENDBR
+456100                  DATASET(ASGN-VIA-ASGNJOB)
+456200                  RESP(WS-RESPONSE)
+456300        END-EXEC
+456400     END-IF
+456500     IF WS-SAVE-ASGN-FILE > SPACE
+456600        MOVE WS-SAVE-ASGN-FILE TO ASGN-AREA
+456700     ELSE
+456800        MOVE ZEROS TO ASGN-EMP-NO
+456900     END-IF.
+457000*
+457100 PXXXX-ON-DUTY-EMP.
+457200*
+457300     SET ASGN-ON-DUTY-REC TO TRUE
+457400     MOVE ZERO            TO ASGN-DATE-TIME
+457500     MOVE ASGNKEY1        TO ASGNJOB
+457600     EXEC CICS READ
+457700               DATASET(ASGN-VIA-ASGNJOB)
+457800               INTO(ASGN-AREA)
+457900               LENGTH(ASGNJOB-RLGTH)
+458000               RIDFLD(ASGNJOB)
+458100               KEYLENGTH(ASGNJOB-KLGTH)
+458200               RESP(WS-RESPONSE)
+458300     END-EXEC
+458400     MOVE WS-RESPONSE TO FILE-STATUS
+458500     IF NOT SUCCESS
+458600        MOVE ZEROS TO ASGN-EMP-NO
+458700     END-IF.
+458800*
+458900 PXXXX-JOB-OWNED.
+459000*
+459100     MOVE '1'      TO ASGN-EMP-NO-REC-TYPE
+459200     MOVE ZEROES   TO ASGN-EMP-DATE-TIME
+459300     MOVE ASGNKEY2 TO ASGNEMP
+459400     EXEC CICS READ
+459500               DATASET(ASGN-VIA-ASGNEMP)
+459600               INTO(WS-ASGN-FILE)
+459700               LENGTH(ASGNEMP-RLGTH)
+459800               RIDFLD(ASGNEMP)
+459900               KEYLENGTH(ASGNEMP-KLGTH)
+460000               RESP(WS-RESPONSE)
+460100     END-EXEC
+460200     MOVE WS-RESPONSE TO FILE-STATUS
+460300     IF SUCCESS
+460400       CONTINUE
+460500     ELSE
+460600       IF NO-RECORD-FND OR END-OF-FILE
+460700         MOVE SPACE TO ASGN-ASSIGNMENT
+460800       ELSE
+460900         MOVE 'PXXXX-JO' TO ERR-PARAGRAPH
+461000         MOVE ASGNEMP TO ERR-KEY
+461100         PERFORM P9999-GOT-PROBLEM
+461200       END-IF
+461300     END-IF.
+461400*
+461500 PXXXX-LATEST-TEMP-JOB.
+461600*
+461700     MOVE SPACES        TO WS-SAVE-ASGN-FILE
+461800     MOVE '2'           TO ASGN-EMP-NO-REC-TYPE
+461900     MOVE ZERO          TO ASGN-EMP-DATE-TIME
+462000     MOVE ASGNKEY2      TO ASGNEMP
+462100     MOVE WS-ASGN-FILE  TO WS-SAVE-ASGN-FILE
+462200     EXEC CICS STARTBR
+462300               DATASET(ASGN-VIA-ASGNEMP)
+462400               RIDFLD(ASGNEMP)
+462500               GTEQ
+462600               RESP(WS-RESPONSE)
+462700     END-EXEC
+462800     MOVE WS-RESPONSE TO FILE-STATUS
+462900     IF SUCCESS
+463000        MOVE '0' TO ASGN-DONE-CODE
+463100        PERFORM UNTIL ASGN-DONE
+463200           EXEC CICS READNEXT
+463300                     DATASET(ASGN-VIA-ASGNEMP)
+463400                     INTO(ASGN-AREA)
+463500                     LENGTH(ASGNEMP-RLGTH)
+463600                     RIDFLD(ASGNEMP)
+463700                     KEYLENGTH(ASGNEMP-KLGTH)
+463800                     RESP(WS-RESPONSE)
+463900           END-EXEC
+464000           MOVE WS-RESPONSE TO FILE-STATUS
+464100           IF SUCCESS
+464200              IF ASGN-EMP-NO = WK-ASGN-EMP-NO
+464300                 AND ASGN-EMP-NO-REC-TYPE = '2'
+464400                 MOVE ASGN-AREA TO WS-SAVE-ASGN-FILE
+464500              ELSE
+464600                 SET ASGN-DONE TO TRUE
+464700              END-IF
+464800           ELSE
+464900              SET ASGN-DONE TO TRUE
+465000           END-IF
+465100        END-PERFORM
+465200        EXEC CICS ENDBR
+465300                  DATASET(ASGN-VIA-ASGNEMP)
+465400                  RESP(WS-RESPONSE)
+465500        END-EXEC
+465600     END-IF
+465700     IF WS-SAVE-ASGN-FILE > SPACES
+465800        MOVE WS-SAVE-ASGN-FILE TO WS-ASGN-FILE
+465900     ELSE
+466000        MOVE SPACES TO WS-ASGN-FILE
+466100     END-IF.
+466200*
+466300 PXXXX-JOB-ON-DUTY.
+466400*
+466500     MOVE '3'      TO ASGN-EMP-NO-REC-TYPE
+466600     MOVE ZEROES   TO ASGN-EMP-DATE-TIME
+466700     MOVE ASGNKEY2 TO ASGNEMP
+466800     EXEC CICS READ
+466900               DATASET(ASGN-VIA-ASGNEMP)
+467000               INTO(ASGN-AREA)
+467100               LENGTH(ASGNEMP-RLGTH)
+467200               RIDFLD(ASGNEMP)
+467300               KEYLENGTH(ASGNEMP-KLGTH)
+467400               RESP(WS-RESPONSE)
+467500     END-EXEC
+467600     MOVE WS-RESPONSE TO FILE-STATUS
+467700     IF SUCCESS
+467800       CONTINUE
+467900     ELSE
+468000       IF NO-RECORD-FND OR END-OF-FILE
+468100         MOVE SPACE TO ASGN-ASSIGNMENT
+468200       ELSE
+468300         MOVE 'PXXXX-JOD' TO ERR-PARAGRAPH
+468400         MOVE ASGNEMP     TO ERR-KEY
+468500         PERFORM P9999-GOT-PROBLEM
+468600       END-IF
+468700     END-IF.
+468800*
+468900 COPY TIMEZONE.
+469000*
+469100 COPY TIMEEDIT.
+469200*
+469300 COPY DATEEDIT.
+469400*
+469500 P9000-SEND-MAP-AND-RETURN.
+469600*
+469700     IF MSGLOG-CODE > SPACES
+469800         PERFORM P9030-GET-MESSAGE
+469900         MOVE MSGLOG-MESSAGE-AREA TO SCR15X-ERRORMSG
+470000     END-IF
+470100
+470200     MOVE P15X-MAP-VERSION(PSTCA-SUB) TO P15X-MAP
+470300     IF CREATE-SCREEN
+470400        PERFORM P9010-SEND-PHYSICAL-MAP
+470500     ELSE
+470600        IF CONTINUE-SCREEN
+470700           PERFORM P9020-SEND-DATAONLY-MAP
+470800        ELSE
+470900           PERFORM P9035-SEND-BUFFER
+471000        END-IF
+471100     END-IF
+471200     EXEC CICS RETURN
+471300               TRANSID(P15X-TRAN)
+471400               COMMAREA(PSTCOMM-AREA)
+471500               LENGTH(P15X-COMM-LGTH)
+471600     END-EXEC.
+471700*
+471800 P9010-SEND-PHYSICAL-MAP.
+471900*
+472000     EXEC CICS SEND MAP(P15X-MAP)
+472100                    MAPSET(P15X-SET)
+472200                    FROM(PSTS15X)
+472300                    CURSOR
+472400                    ERASE
+472500                    RESP(WS-RESPONSE)
+472600     END-EXEC
+472700     MOVE WS-RESPONSE TO FILE-STATUS
+472800     IF NOT SUCCESS
+472900        MOVE 'P9010'   TO ERR-PARAGRAPH
+473000        PERFORM P9999-GOT-PROBLEM
+473100     END-IF.
+473200*
+473300 P9020-SEND-DATAONLY-MAP.
+473400*
+473500     EXEC CICS SEND MAP(P15X-MAP)
+473600                    MAPSET(P15X-SET)
+473700                    FROM(PSTS15X)
+473800                    DATAONLY
+473900                    CURSOR
+474000                    RESP(WS-RESPONSE)
+474100     END-EXEC
+474200     MOVE WS-RESPONSE TO FILE-STATUS
+474300     IF NOT SUCCESS
+474400        MOVE 'P9020' TO ERR-PARAGRAPH
+474500        PERFORM P9999-GOT-PROBLEM
+474600     END-IF.
+474700*
+474800 P9030-GET-MESSAGE.
+474900*
+475000     MOVE PSTCA-SUB TO MSGLOG-SUB-CODE
+475100     EXEC CICS READ
+475200               DATASET(MSGLOG-VIA-CODE)
+475300               INTO(MSGLOG-AREA)
+475400               LENGTH(MSGLOG-RLGTH)
+475500               RIDFLD(MSGLOG-KEY)
+475600               KEYLENGTH(MSGLOG-KLGTH)
+475700               RESP(WS-RESPONSE)
+475800     END-EXEC
+475900     MOVE WS-RESPONSE TO FILE-STATUS
+476000     IF NOT SUCCESS
+476100        IF PSTCA-SUB = 1
+476200           MOVE 'NO MESSAGE ON FILE' TO MSGLOG-MESSAGE
+476300        ELSE
+476400           MOVE 'AUCUN MESSAGE'      TO MSGLOG-MESSAGE
+476500        END-IF
+476600     END-IF
+476700     MOVE MSGLOG-CODE     TO MSGLOG-MSG-CODE
+476800     MOVE '-'             TO MSGLOG-MSG-SEP
+476900     MOVE MSGLOG-SUB-CODE TO MSGLOG-MSG-SUB-CODE.
+477000*
+477100 P9035-SEND-BUFFER.
+477200*
+477300     EXEC CICS SEND
+477400               FROM(WS-BUFFER-DATA)
+477500               LENGTH(WS-BUFFER-LGTH)
+477600               ERASE
+477700               RESP(WS-RESPONSE)
+477800     END-EXEC
+477900     MOVE WS-RESPONSE       TO FILE-STATUS
+478000     IF NOT SUCCESS
+478100        MOVE 'P9035-1'      TO ERR-PARAGRAPH
+478200        MOVE 'SEND BUFFER'  TO ERR-KEY
+478300        PERFORM P9999-GOT-PROBLEM
+478400     END-IF
+478500     EXEC CICS SEND
+478600               CONTROL
+478700               CURSOR(WS-BUFFER-CURSOR)
+478800               RESP(WS-RESPONSE)
+478900     END-EXEC
+479000     MOVE WS-RESPONSE       TO FILE-STATUS
+479100     IF NOT SUCCESS
+479200        MOVE 'P9035-2'      TO ERR-PARAGRAPH
+479300        MOVE 'SEND CURSOR'  TO ERR-KEY
+479400        PERFORM P9999-GOT-PROBLEM
+479500     END-IF.
+479600*
+479700 P9100-SETUP-SCR03.
+479800*
+479900     MOVE SPACES TO PSTCA-VARIABLE-AREA
+480000     EXEC CICS XCTL
+480100               PROGRAM(P03-PGM)
+480200               COMMAREA(PSTCOMM-AREA)
+480300               LENGTH(PSTCOMM-LGTH)
+480400               RESP(WS-RESPONSE)
+480500     END-EXEC
+480600     MOVE WS-RESPONSE TO FILE-STATUS
+480700     IF NOT SUCCESS
+480800         MOVE 'P9100' TO ERR-PARAGRAPH
+480900         PERFORM P9999-GOT-PROBLEM
+481000     END-IF.
+481100*
+481200 P9500-SETUP-SCR998.
+481300*
+481400     MOVE SPACES            TO P998COMM-AREA
+481500     MOVE P15X-PGM          TO P998CA-FROM-PROGRAM
+481600     MOVE P15X-MAP          TO P998CA-SCREEN-ID
+481700     MOVE EIBCPOSN          TO P998CA-CURSOR-POS
+481800     EXEC CICS XCTL
+481900               PROGRAM(P998-PGM)
+482000               COMMAREA(PSTCOMM-AREA)
+482100               LENGTH(PSTCOMM-LGTH)
+482200               RESP(WS-RESPONSE)
+482300     END-EXEC
+482400     MOVE WS-RESPONSE       TO FILE-STATUS
+482500     IF NOT SUCCESS
+482600        MOVE 'P9500'        TO ERR-PARAGRAPH
+482700        PERFORM P9999-GOT-PROBLEM
+482800     END-IF.
+482900*
+483000 P9600-SETUP-SCR997.
+483100*
+483200     MOVE SPACES                    TO PSTCA-VARIABLE-AREA
+483300     MOVE P15X-PGM                  TO P997CA-FROM-PROGRAM
+483400     SET P997CA-POOL                TO TRUE
+483500     MOVE CNTL-FILE-VIA-CNTLKEY     TO P997CA-FILE
+483600     MOVE CNTLFILE-RLGTH            TO P997CA-RLGTH
+483700     MOVE CNTLFILE-KLGTH            TO P997CA-KLGTH
+483800     MOVE '03'                      TO P997CA-PASS-KEY(1:2)
+483900     MOVE SCR15X-DIST               TO P997CA-PASS-KEY(3:2)
+484000     MOVE SCR15X-SUB-DIST           TO P997CA-PASS-KEY(5:2)
+484100     MOVE SCR15X-POOL               TO P997CA-PASS-KEY(7:2)
+484200     EXEC CICS XCTL
+484300               PROGRAM(P997-PGM)
+484400               COMMAREA(PSTCOMM-AREA)
+484500               LENGTH(PSTCOMM-LGTH)
+484600               RESP(WS-RESPONSE)
+484700     END-EXEC
+484800     MOVE WS-RESPONSE               TO FILE-STATUS
+484900     IF NOT SUCCESS
+485000         MOVE 'P9600'               TO ERR-PARAGRAPH
+485100         PERFORM P9999-GOT-PROBLEM
+485200     END-IF.
+485300*
+485400 P9610-SETUP-SCR12D.
+485500*
+485600     MOVE SPACES                    TO PSTCA-VARIABLE-AREA
+485700     MOVE P15X-PGM                  TO PSTCA-FROM-PROGRAM
+485800     MOVE SCR15X-DIST               TO P12DCA-DIST
+485900     MOVE SCR15X-SUB-DIST           TO P12DCA-SUB-DIST
+486000     MOVE SCR15X-POOL               TO P12DCA-BOARD
+486100     MOVE SCR15X-TURN(ARRAY-SUB)    TO P12DCA-TURN
+486200     MOVE SCR15X-CC(ARRAY-SUB)      TO P12DCA-CC
+486300     MOVE SCR15X-START-DATE         TO P12DCA-START-DATE
+486400     MOVE SCR15X-START-TIME         TO P12DCA-START-TIME
+486500     EXEC CICS XCTL
+486600               PROGRAM(P12D-PGM)
+486700               COMMAREA(PSTCOMM-AREA)
+486800               LENGTH(PSTCOMM-LGTH)
+486900               RESP(WS-RESPONSE)
+487000     END-EXEC
+487100     MOVE WS-RESPONSE               TO FILE-STATUS
+487200     IF NOT SUCCESS
+487300         MOVE 'P9610'               TO ERR-PARAGRAPH
+487400         PERFORM P9999-GOT-PROBLEM
+487500     END-IF.
+487600*
+487700 P9810-PROCESS-OFFSET.
+487800*
+487900     MOVE PSTCA-DT-OS-FUN       TO PARM-CONV-TYPE
+488000     MOVE PSTCA-DT-OS-DAYS      TO PARM-SEC-JULIAN-DAY
+488100     MOVE PSTCA-DT-OS-HRMN      TO PARM-SEC-HRMN
+488200     EXEC CICS LINK
+488300               PROGRAM(P903-PGM)
+488400               COMMAREA(DATE-CONVERSION-PARMS)
+488500               LENGTH(P903-LGTH)
+488600               RESP(WS-RESPONSE)
+488700     END-EXEC
+488800     MOVE WS-RESPONSE           TO FILE-STATUS
+488900     IF NOT SUCCESS
+489000        MOVE 'P9810-1'          TO ERR-PARAGRAPH
+489100        MOVE 'P903'             TO ERR-KEY
+489200        PERFORM P9999-GOT-PROBLEM
+489300     END-IF.
+489400*
+489500 P9830-SNAPSHOT-UFP.
+489600*
+489700     MOVE SPACES                TO P915-COMMAREA-PARMS
+489800     SET P915-SNAPSHOT-FUNCTION TO TRUE
+489900     MOVE CNTL-DIST             TO P915-TURN-DIST
+490000     MOVE CNTL-SUB-DIST         TO P915-TURN-SUB-DIST
+490100     MOVE CNTL-POOL-CODE        TO P915-TURN-POOL
+490200     EXEC CICS LINK
+490300               PROGRAM(P915-PGM)
+490400               COMMAREA(P915-COMMAREA-PARMS)
+490500               LENGTH(P915-LGTH)
+490600               RESP(WS-RESPONSE)
+490700     END-EXEC
+490800     MOVE WS-RESPONSE           TO FILE-STATUS
+490900     IF NOT SUCCESS
+491000        MOVE 'P9830-1'          TO ERR-PARAGRAPH
+491100        MOVE 'P915LINK'         TO ERR-KEY
+491200        PERFORM P9999-GOT-PROBLEM
+491300     END-IF.
+491400*
+491500 P9990-CLEAR-SCREEN.
+491600*
+491700     EXEC CICS SEND CONTROL
+491800                    ERASE
+491900                    FREEKB
+492000     END-EXEC
+492100     EXEC CICS RETURN END-EXEC.
+492200*
+492300 P9999-GOT-PROBLEM.
+492400*
+492500     MOVE P15X-PGM  TO ERR-PROGRAM
+492600     MOVE DFHEIBLK  TO ERR-EIBLK
+492700     EXEC CICS XCTL
+492800               PROGRAM(PSTERR-PGM)
+492900               COMMAREA(PSTERAR-AREA)
+493000               LENGTH(PSTERAR-LGTH)
+493100               RESP(WS-RESPONSE)
+493200     END-EXEC
+493300     EXEC CICS ABEND
+493400               ABCODE(PSTERR-ABCODE)
+493500               CANCEL
+493600     END-EXEC.
+493700*
+493800 X9999-GOBACK.
+493900     GOBACK.
+494000*

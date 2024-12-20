@@ -1983,6 +1983,13 @@
       *    CONTROL REACHES HERE ONLY IF :
       *    MSTR3-SYSTEM-RESET-BRK = MSTR3-PROJ-RESET-BRK
 
+
+      *********************************************************
+      * TRYING TO FIND THE FIRST HOS EVENT AFTER THE RESET-END
+      * - GET RESET-END TIME
+      * - LOOP ETOD FILE TO GET THE 1ST HOS EVENT AFTER 
+      *   RESET-END TIME
+      *********************************************************
 597600     PERFORM P1132A-FETCH-WRR-START
 
 602900     IF MSTR3-PROJ-RESET-BRK > WS-WRR-START-DTTM
